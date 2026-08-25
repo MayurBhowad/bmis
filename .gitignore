@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Runtime / coverage / build
+dist/
+build/
+coverage/
+.nyc_output/
+*.tsbuildinfo
+
+# Persistence / dump files (local runtime)
+*.rdb
+*.aof
+dump.rdb
+appendonly.aof
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors / IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Test / temp
+tmp/
+temp/
+*.tmp
+*.temp
