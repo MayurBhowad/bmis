@@ -37,18 +37,26 @@ src/
     ├── get.js                    # GET command
     ├── del.js                    # DEL command
     └── exists.js                 # EXISTS command
+tests/
+└── database.test.js              # Database unit tests (node:test)
 ```
 
 ## Requirements
 
 - [Node.js](https://nodejs.org/) (LTS recommended)
 
-No external npm dependencies yet.
+No external npm dependencies yet. Tests use the built-in `node:test` runner.
 
 ## Run
 
 ```bash
 node src/index.js
+```
+
+## Test
+
+```bash
+npm test
 ```
 
 For a full walkthrough of commands, responses, and errors, see **[USER_GUIDE.md](./USER_GUIDE.md)**.
