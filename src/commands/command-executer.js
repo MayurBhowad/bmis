@@ -17,29 +17,24 @@ class CommandExecuter {
 
     execute(input) {
         const trimmedInput = input.trim();
+
+        // If the input is empty, return undefined
         if (!trimmedInput) {
             return undefined;
         }
-        const parts = input.trim().split(/\s+/);
-        const command = parts[0].toUpperCase();
 
-        switch (command) {
-            case 'SET': {
-                return this.commands.SET(this.database, parts.slice(1));
-            }
-            case 'GET': {
-                return this.commands.GET(this.database, parts.slice(1));
-            }
-            case 'DEL': {
-                return this.commands.DEL(this.database, parts.slice(1));
-            }
-            case 'EXISTS': {
-                return this.commands.EXISTS(this.database, parts.slice(1));
-            }
-            default:{
-                return `ERR unknown command '${command}'`;
-            }
+        const parts = input.trim().split(/\s+/);
+        const commandName = parts[0].toUpperCase();
+        const args = parts.slice(1);
+
+        const command = this.commands[commandName];
+
+        // Unknown command
+        if (!command) {
+            return `ERR unknown command '${commandName}'`;
         }
+
+        return command(this.database, args);
     }
 }
 
