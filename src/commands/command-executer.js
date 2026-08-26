@@ -9,19 +9,31 @@ class CommandExecuter {
 
         switch (command) {
             case 'SET': {
+                if (parts.length !== 3) {
+                    return 'ERR wrong number of arguments for SET command';
+                }
                 const key = parts[1];
                 const value = parts[2];
                 return this.database.set(key, value);
             }
             case 'GET': {
+                if (parts.length !== 2) {
+                    return 'ERR wrong number of arguments for GET command';
+                }
                 const key = parts[1];
                 return this.database.get(key);
             }
             case 'DEL': {
+                if (parts.length !== 2) {
+                    return 'ERR wrong number of arguments for DEL command';
+                }
                 const key = parts[1];
                 return this.database.del(key);
             }
             case 'EXISTS': {
+                if (parts.length !== 2) {
+                    return 'ERR wrong number of arguments for EXISTS command';
+                }
                 const key = parts[1];
                 return this.database.exists(key);
             }

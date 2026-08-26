@@ -10,14 +10,19 @@ BMis starts as a minimal key-value engine and is evolving toward a networked dat
 
 v0.0.4 — interactive CLI over an in-memory key-value store.
 
-| Command | Description | Example |
-|---------|-------------|---------|
-| `SET` | Store a key-value pair | `SET name Mayur` → `OK` |
-| `GET` | Retrieve a value by key | `GET name` → `Mayur` (or `null` if missing) |
-| `DEL` | Remove a key | `DEL name` → `1` (or `0` if missing) |
-| `EXISTS` | Check whether a key exists | `EXISTS name` → `1` (or `0` if missing) |
+| Command | Args | Description | Example |
+|---------|------|-------------|---------|
+| `SET` | key, value | Store a key-value pair | `SET name Mayur` → `OK` |
+| `GET` | key | Retrieve a value by key | `GET name` → `Mayur` (or `null` if missing) |
+| `DEL` | key | Remove a key | `DEL name` → `1` (or `0` if missing) |
+| `EXISTS` | key | Check whether a key exists | `EXISTS name` → `1` (or `0` if missing) |
 
-Commands are case-insensitive. Unknown commands return: `ERR unknown command '<COMMAND>'`.
+Commands are case-insensitive.
+
+Errors:
+
+- Unknown command → `ERR unknown command '<COMMAND>'`
+- Wrong arity → `ERR wrong number of arguments for <COMMAND> command`
 
 ## Project structure
 
@@ -57,6 +62,8 @@ BMis> DEL name
 1
 BMis> GET name
 null
+BMis> SET
+ERR wrong number of arguments for SET command
 ```
 
 ## Roadmap (high level)
