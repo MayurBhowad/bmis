@@ -9,6 +9,9 @@ class Database {
     }
 
     get(key) {
+        if (!this.data.has(key)) {
+            return null;
+        }
         return this.data.get(key);
     }
 

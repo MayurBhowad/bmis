@@ -13,7 +13,7 @@ v0.0.3 — in-memory store with basic key-value commands.
 | Command | Description | Example |
 |---------|-------------|---------|
 | `SET` | Store a key-value pair | `SET name Mayur` → `OK` |
-| `GET` | Retrieve a value by key | `GET name` → `Mayur` |
+| `GET` | Retrieve a value by key | `GET name` → `Mayur` (or `null` if missing) |
 | `DELETE` | Remove a key | `DELETE name` → `1` (or `0` if missing) |
 | `EXISTS` | Check whether a key exists | `EXISTS name` → `1` (or `0` if missing) |
 
@@ -49,7 +49,7 @@ OK
 1
 1
 0
-undefined
+null
 ```
 
 ## Roadmap (high level)
