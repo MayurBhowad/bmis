@@ -1,6 +1,6 @@
 # BMis
 
-**Version:** v0.0.3
+**Version:** v0.0.4
 
 In-memory data platform.
 
@@ -8,22 +8,22 @@ BMis starts as a minimal key-value engine and is evolving toward a networked dat
 
 ## Current status
 
-v0.0.3 — in-memory store with basic key-value commands.
+v0.0.4 — interactive CLI over an in-memory key-value store.
 
 | Command | Description | Example |
 |---------|-------------|---------|
 | `SET` | Store a key-value pair | `SET name Mayur` → `OK` |
 | `GET` | Retrieve a value by key | `GET name` → `Mayur` (or `null` if missing) |
-| `DELETE` | Remove a key | `DELETE name` → `1` (or `0` if missing) |
+| `DEL` | Remove a key | `DEL name` → `1` (or `0` if missing) |
 | `EXISTS` | Check whether a key exists | `EXISTS name` → `1` (or `0` if missing) |
 
-Unknown commands return: `ERR unknown command '<COMMAND>'`.
+Commands are case-insensitive. Unknown commands return: `ERR unknown command '<COMMAND>'`.
 
 ## Project structure
 
 ```text
 src/
-├── index.js                      # Entry point / smoke demo
+├── index.js                      # Interactive CLI entry point
 ├── database/
 │   └── database.js               # In-memory Map-backed store
 └── commands/
@@ -42,13 +42,20 @@ No external npm dependencies yet.
 node src/index.js
 ```
 
-Expected output:
+Starts an interactive session:
 
 ```text
+Welcome to BMis CLI
+Type commands like: SET name Mayur
+BMis> SET name Mayur
 OK
+BMis> GET name
+Mayur
+BMis> EXISTS name
 1
+BMis> DEL name
 1
-0
+BMis> GET name
 null
 ```
 

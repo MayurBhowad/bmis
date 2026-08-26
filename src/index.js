@@ -1,11 +1,20 @@
+const readline = require('readline');
 const Database = require('./database/database');
 const CommandExecuter = require('./commands/command-executer');
 
 const db = new Database();
 const CE = new CommandExecuter(db);
 
-console.log(CE.execute('SET name Mayur'));
-console.log(CE.execute('EXISTS name'));
-console.log(CE.execute('DELETE name'));
-console.log(CE.execute('EXISTS name'));
-console.log(CE.execute('GET name'));
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    prompt: 'BMis> '
+});
+console.log('Welcome to BMis CLI');
+console.log('Type commands like: SET name Mayur');
+rl.prompt();
+rl.on('line', (input) => {
+    const result = CE.execute(input);
+    console.log(result);
+    rl.prompt();
+})

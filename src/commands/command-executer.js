@@ -17,7 +17,7 @@ class CommandExecuter {
                 const key = parts[1];
                 return this.database.get(key);
             }
-            case 'DELETE': {
+            case 'DEL': {
                 const key = parts[1];
                 return this.database.del(key);
             }
