@@ -1,46 +1,35 @@
+
 class CommandExecuter {
     constructor(database) {
         this.database = database;
+        this.commands = {
+            SET: require('./set'),
+            GET: require('./get'),
+            DEL: require('./del'),
+            EXISTS: require('./exists')
+        };
     }
 
     execute(input) {
         const trimmedInput = input.trim();
         if (!trimmedInput) {
-            return null;
+            return undefined;
         }
         const parts = input.trim().split(/\s+/);
         const command = parts[0].toUpperCase();
 
         switch (command) {
             case 'SET': {
-                if (parts.length <3) {
-                    return 'ERR wrong number of arguments for SET command';
-                }
-                const key = parts[1];
-                // Everything after the key is the value
-                const value = parts.slice(2).join(' ');
-                return this.database.set(key, value);
+                return this.commands.SET(this.database, parts.slice(1));
             }
             case 'GET': {
-                if (parts.length !== 2) {
-                    return 'ERR wrong number of arguments for GET command';
-                }
-                const key = parts[1];
-                return this.database.get(key);
+                return this.commands.GET(this.database, parts.slice(1));
             }
             case 'DEL': {
-                if (parts.length !== 2) {
-                    return 'ERR wrong number of arguments for DEL command';
-                }
-                const key = parts[1];
-                return this.database.del(key);
+                return this.commands.DEL(this.database, parts.slice(1));
             }
             case 'EXISTS': {
-                if (parts.length !== 2) {
-                    return 'ERR wrong number of arguments for EXISTS command';
-                }
-                const key = parts[1];
-                return this.database.exists(key);
+                return this.commands.EXISTS(this.database, parts.slice(1));
             }
             default:{
                 return `ERR unknown command '${command}'`;

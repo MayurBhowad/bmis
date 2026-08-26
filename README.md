@@ -8,7 +8,7 @@ BMis starts as a minimal key-value engine and is evolving toward a networked dat
 
 ## Current status
 
-v0.0.4 — interactive CLI over an in-memory key-value store.
+v0.0.4 — interactive CLI over an in-memory key-value store. Each command lives in its own module; the executer parses input and routes to the matching handler.
 
 | Command | Args | Description | Example |
 |---------|------|-------------|---------|
@@ -17,7 +17,7 @@ v0.0.4 — interactive CLI over an in-memory key-value store.
 | `DEL` | key | Remove a key | `DEL name` → `1` (or `0` if missing) |
 | `EXISTS` | key | Check whether a key exists | `EXISTS name` → `1` (or `0` if missing) |
 
-Commands are case-insensitive.
+Commands are case-insensitive. For `SET`, everything after the key is the value (spaces allowed).
 
 Errors:
 
@@ -32,7 +32,11 @@ src/
 ├── database/
 │   └── database.js               # In-memory Map-backed store
 └── commands/
-    └── command-executer.js       # Parses and routes commands
+    ├── command-executer.js       # Parses input and routes to handlers
+    ├── set.js                    # SET command
+    ├── get.js                    # GET command
+    ├── del.js                    # DEL command
+    └── exists.js                 # EXISTS command
 ```
 
 ## Requirements
