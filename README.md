@@ -1,17 +1,21 @@
 # BMis
 
+**Version:** v0.0.3
+
 In-memory data platform.
 
 BMis starts as a minimal key-value engine and is evolving toward a networked database with persistence, messaging, and distributed capabilities.
 
 ## Current status
 
-Early prototype: an in-memory store with `SET` and `GET` command execution.
+v0.0.3 — in-memory store with basic key-value commands.
 
 | Command | Description | Example |
 |---------|-------------|---------|
 | `SET` | Store a key-value pair | `SET name Mayur` → `OK` |
 | `GET` | Retrieve a value by key | `GET name` → `Mayur` |
+| `DELETE` | Remove a key | `DELETE name` → `1` (or `0` if missing) |
+| `EXISTS` | Check whether a key exists | `EXISTS name` → `1` (or `0` if missing) |
 
 Unknown commands return: `ERR unknown command '<COMMAND>'`.
 
@@ -23,7 +27,7 @@ src/
 ├── database/
 │   └── database.js               # In-memory Map-backed store
 └── commands/
-    └── command-executer.js       # Parses and routes SET / GET
+    └── command-executer.js       # Parses and routes commands
 ```
 
 ## Requirements
@@ -42,7 +46,10 @@ Expected output:
 
 ```text
 OK
-Mayur
+1
+1
+0
+undefined
 ```
 
 ## Roadmap (high level)

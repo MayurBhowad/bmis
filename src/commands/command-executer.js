@@ -17,6 +17,14 @@ class CommandExecuter {
                 const key = parts[1];
                 return this.database.get(key);
             }
+            case 'DELETE': {
+                const key = parts[1];
+                return this.database.del(key);
+            }
+            case 'EXISTS': {
+                const key = parts[1];
+                return this.database.exists(key);
+            }
             default:{
                 return `ERR unknown command '${command}'`;
             }

@@ -11,6 +11,14 @@ class Database {
     get(key) {
         return this.data.get(key);
     }
+
+    del(key) {
+        return this.data.delete(key) ? 1 : 0;
+    }
+
+    exists(key) {
+        return this.data.has(key) ? 1 : 0;
+    }
 }
 
 module.exports = Database;
