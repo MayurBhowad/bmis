@@ -1,12 +1,17 @@
 
+const setCommand = require('./set');
+const getCommand = require('./get');
+const delCommand = require('./del');
+const existsCommand = require('./exists');
+
 class CommandExecuter {
     constructor(database) {
         this.database = database;
         this.commands = {
-            SET: require('./set'),
-            GET: require('./get'),
-            DEL: require('./del'),
-            EXISTS: require('./exists')
+            SET: setCommand,
+            GET: getCommand,
+            DEL: delCommand,
+            EXISTS: existsCommand
         };
     }
 
