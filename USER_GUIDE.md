@@ -1,6 +1,6 @@
 # BMis User Guide
 
-**Version:** v0.0.4
+**Version:** v0.0.5
 
 BMis is an interactive command-line key-value store. You type commands at the `BMis>` prompt; data lives in memory for that session only.
 

@@ -1,6 +1,6 @@
 # BMis
 
-**Version:** v0.0.4
+**Version:** v0.0.5
 
 In-memory data platform.
 
@@ -8,7 +8,7 @@ BMis starts as a minimal key-value engine and is evolving toward a networked dat
 
 ## Current status
 
-v0.0.4 — interactive CLI over an in-memory key-value store. Each command lives in its own module; the executer parses input and routes to the matching handler.
+v0.0.5 — interactive CLI over an in-memory key-value store, with unit tests for the database and command executer. Each command lives in its own module; the executer parses input and routes to the matching handler.
 
 | Command | Args | Description | Example |
 |---------|------|-------------|---------|
@@ -38,7 +38,8 @@ src/
     ├── del.js                    # DEL command
     └── exists.js                 # EXISTS command
 tests/
-└── database.test.js              # Database unit tests (node:test)
+├── database.test.js              # Database unit tests (node:test)
+└── commands.test.js              # CommandExecuter / CLI command tests
 ```
 
 ## Requirements
