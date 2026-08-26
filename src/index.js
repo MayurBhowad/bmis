@@ -15,6 +15,8 @@ console.log('Type commands like: SET name Mayur');
 rl.prompt();
 rl.on('line', (input) => {
     const result = CE.execute(input);
-    console.log(result);
+    if (result !== null) {
+        console.log(result);
+    }
     rl.prompt();
 })

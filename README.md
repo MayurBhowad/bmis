@@ -47,6 +47,8 @@ No external npm dependencies yet.
 node src/index.js
 ```
 
+For a full walkthrough of commands, responses, and errors, see **[USER_GUIDE.md](./USER_GUIDE.md)**.
+
 Starts an interactive session:
 
 ```text
