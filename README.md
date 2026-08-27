@@ -14,8 +14,8 @@ v0.0.5 — interactive CLI over an in-memory key-value store, with unit tests fo
 |---------|------|-------------|---------|
 | `SET` | key, value | Store a key-value pair | `SET name Mayur` → `OK` |
 | `GET` | key | Retrieve a value by key | `GET name` → `Mayur` (or `null` if missing) |
-| `DEL` | key | Remove a key | `DEL name` → `1` (or `0` if missing) |
-| `EXISTS` | key | Check whether a key exists | `EXISTS name` → `1` (or `0` if missing) |
+| `DEL` | key [key ...] | Remove one or more keys | `DEL name city` → `2` (count of keys deleted) |
+| `EXISTS` | key [key ...] | Count how many keys exist | `EXISTS name missing` → `1` |
 
 Commands are case-insensitive. For `SET`, everything after the key is the value (spaces allowed).
 

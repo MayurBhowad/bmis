@@ -1,9 +1,15 @@
 function execute(database, args) {
-    if (args.length !== 1) {
+    if (args.length < 1) {
         return 'ERR wrong number of arguments for EXISTS command';
     }
-    const key = args[0];
-    return database.exists(key);
+
+    let existsCount = 0;
+
+    for (const key of args) {
+        existsCount += database.exists(key);
+    }
+
+    return existsCount;
 }
 
 module.exports = execute

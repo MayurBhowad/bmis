@@ -34,7 +34,8 @@ To leave the session, press `Ctrl+C` (or close the terminal). All stored keys ar
 - Commands are **case-insensitive** (`SET`, `set`, and `Set` are the same).
 - Arguments are separated by whitespace.
 - For `SET`, everything after the key is treated as the value (so values may contain spaces).
-- `GET`, `DEL`, and `EXISTS` each take **exactly one** argument (the key). Extra arguments are an error.
+- `GET` takes **exactly one** argument (the key). Extra arguments are an error.
+- `DEL` and `EXISTS` accept **one or more** keys and return a count.
 - Blank lines produce no output; the prompt simply returns.
 - Data is **in-memory only** — nothing is written to disk.
 
@@ -91,17 +92,16 @@ BMis> GET name extra
 ERR wrong number of arguments for GET command
 ```
 
-### DEL — delete a key
+### DEL — delete one or more keys
 
-**Syntax:** `DEL <key>`
+**Syntax:** `DEL <key> [key ...]`
 
-Removes `key` if it exists.
+Removes each key if it exists. Returns the number of keys that were actually deleted.
 
 | Result | Meaning |
 |--------|---------|
-| `1` | Key existed and was deleted |
-| `0` | Key did not exist |
-| `ERR wrong number of arguments for DEL command` | Missing key, or more than one argument |
+| *(number)* | Count of keys that existed and were deleted |
+| `ERR wrong number of arguments for DEL command` | No keys provided |
 
 **Examples:**
 
@@ -112,23 +112,26 @@ BMis> DEL temp
 1
 BMis> DEL temp
 0
+BMis> SET name Mayur
+OK
+BMis> SET city Mumbai
+OK
+BMis> DEL name city missing
+2
 BMis> DEL
-ERR wrong number of arguments for DEL command
-BMis> DEL name extra
 ERR wrong number of arguments for DEL command
 ```
 
-### EXISTS — check if a key exists
+### EXISTS — check if one or more keys exist
 
-**Syntax:** `EXISTS <key>`
+**Syntax:** `EXISTS <key> [key ...]`
 
-Reports whether `key` is present in the store. Use the full command name `EXISTS` (not `EXIST`).
+Reports how many of the given keys are present in the store. Use the full command name `EXISTS` (not `EXIST`).
 
 | Result | Meaning |
 |--------|---------|
-| `1` | Key exists |
-| `0` | Key does not exist |
-| `ERR wrong number of arguments for EXISTS command` | Missing key, or more than one argument |
+| *(number)* | Count of keys that exist |
+| `ERR wrong number of arguments for EXISTS command` | No keys provided |
 
 **Examples:**
 
@@ -139,9 +142,11 @@ BMis> EXISTS user
 1
 BMis> EXISTS other
 0
+BMis> SET city Mumbai
+OK
+BMis> EXISTS user city missing
+2
 BMis> EXISTS
-ERR wrong number of arguments for EXISTS command
-BMis> EXISTS name extra
 ERR wrong number of arguments for EXISTS command
 BMis> EXIST name
 ERR unknown command 'EXIST'

@@ -93,3 +93,31 @@ test("empty input is ignored", () => {
 
     assert.strictEqual(result, undefined);
 });
+
+test("DEL deletes multiple and returns the number of deleted keys", () => {
+    const executor = createExecutor();
+
+    executor.execute("SET name Mayur");
+    executor.execute("SET city Mumbai");
+    executor.execute("SET role Developer");
+
+    const result = executor.execute("DEL name city missing");
+
+    assert.strictEqual(result, 2);
+
+    assert.strictEqual(executor.execute("GET name"), null);
+    assert.strictEqual(executor.execute("GET city"), null);
+    assert.strictEqual(executor.execute("GET role"), 'Developer');
+});
+
+test("EXISTS check multiple keys and returns the number of existing keys", () => {
+    const executor = createExecutor();
+
+    executor.execute("SET name Mayur");
+    executor.execute("SET city Mumbai");
+    executor.execute("SET role Developer");
+
+    const result = executor.execute("EXISTS name city missing");
+
+    assert.strictEqual(result, 2);
+});
