@@ -130,9 +130,57 @@ test("EXPIRE sets expiration on an existing key", () => {
     assert.strictEqual(result, 1);
 });
 
-test("EXPIRES returns 0 for a missing key", () => {
+test("EXPIRE returns 0 for a missing key", () => {
     const executor = createExecutor();
 
     const result = executor.execute("EXPIRE session 10");
     assert.strictEqual(result, 0);
 });
+
+test("EXPIRE validates missing arguments", () => {
+    const executor = createExecutor();
+  
+    const result = executor.execute("EXPIRE");
+  
+    assert.strictEqual(
+      result,
+      "ERR wrong number of arguments for EXPIRE command"
+    );
+  });
+  
+  test("EXPIRE validates missing seconds", () => {
+    const executor = createExecutor();
+  
+    const result = executor.execute("EXPIRE session");
+  
+    assert.strictEqual(
+      result,
+      "ERR wrong number of arguments for EXPIRE command"
+    );
+  });
+  
+  test("EXPIRE rejects non-integer seconds", () => {
+    const executor = createExecutor();
+  
+    executor.execute("SET session active");
+  
+    const result = executor.execute("EXPIRE session abc");
+  
+    assert.strictEqual(
+      result,
+      "ERR value is not an integer or out of range"
+    );
+  });
+  
+  test("EXPIRE rejects decimal seconds", () => {
+    const executor = createExecutor();
+  
+    executor.execute("SET session active");
+  
+    const result = executor.execute("EXPIRE session 1.5");
+  
+    assert.strictEqual(
+      result,
+      "ERR value is not an integer or out of range"
+    );
+  });

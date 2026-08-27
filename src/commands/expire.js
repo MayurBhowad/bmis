@@ -4,7 +4,7 @@ function execute(database, args) {
     }
 
     const key = args[0];
-    const seconds = parseInt(args[1]);
+    const seconds = Number(args[1]);
 
     if (!Number.isInteger(seconds)) {
         return 'ERR value is not an integer or out of range';

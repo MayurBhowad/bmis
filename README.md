@@ -24,7 +24,7 @@ Errors:
 
 - Unknown command → `ERR unknown command '<COMMAND>'`
 - Wrong arity → `ERR wrong number of arguments for <COMMAND> command`
-- Invalid `EXPIRE` seconds → `ERR value is not an integer or out of range`
+- Invalid `EXPIRE` seconds (non-integer or out of range) → `ERR value is not an integer or out of range`
 
 ## Project structure
 

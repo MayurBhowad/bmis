@@ -158,14 +158,14 @@ ERR unknown command 'EXIST'
 
 **Syntax:** `EXPIRE <key> <seconds>`
 
-Sets an expiration on an existing key. After the TTL elapses, `GET` returns `null` and removes the key. `SET` on the same key clears the expiration.
+Sets an expiration on an existing key. `seconds` must be a whole number. After the TTL elapses, `GET` returns `null` and removes the key. `SET` on the same key clears the expiration.
 
 | Result | Meaning |
 |--------|---------|
 | `1` | Expiration was set on an existing key |
 | `0` | Key does not exist |
 | `ERR wrong number of arguments for EXPIRE command` | Missing key or seconds, or too many arguments |
-| `ERR value is not an integer or out of range` | Seconds is not a valid integer |
+| `ERR value is not an integer or out of range` | Seconds is not a valid whole number |
 
 **Examples:**
 
@@ -180,6 +180,8 @@ BMis> EXPIRE session
 ERR wrong number of arguments for EXPIRE command
 BMis> EXPIRE session abc
 ERR value is not an integer or out of range
+BMis> EXPIRE session 1.5
+ERR value is not an integer or out of range
 ```
 
 ## Errors
@@ -188,7 +190,7 @@ ERR value is not an integer or out of range
 |---------|--------|
 | `ERR unknown command '<COMMAND>'` | Command name is not recognized |
 | `ERR wrong number of arguments for <COMMAND> command` | Too few or too many arguments for that command |
-| `ERR value is not an integer or out of range` | `EXPIRE` seconds argument is not a valid integer |
+| `ERR value is not an integer or out of range` | `EXPIRE` seconds argument is not a valid whole number |
 
 **Examples:**
 
