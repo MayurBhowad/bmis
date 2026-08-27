@@ -34,8 +34,10 @@ To leave the session, press `Ctrl+C` (or close the terminal). All stored keys ar
 - Commands are **case-insensitive** (`SET`, `set`, and `Set` are the same).
 - Arguments are separated by whitespace.
 - For `SET`, everything after the key is treated as the value (so values may contain spaces).
-- `GET` takes **exactly one** argument (the key). Extra arguments are an error.
+- `GET` takes **exactly one** argument (the key). Extra arguments are an error. Returns `null` for missing or expired keys.
 - `DEL` and `EXISTS` accept **one or more** keys and return a count.
+- `EXPIRE` takes **exactly two** arguments: a key and a TTL in seconds.
+- `SET` clears any existing expiration when overwriting a key.
 - Blank lines produce no output; the prompt simply returns.
 - Data is **in-memory only** — nothing is written to disk.
 
@@ -45,7 +47,7 @@ To leave the session, press `Ctrl+C` (or close the terminal). All stored keys ar
 
 **Syntax:** `SET <key> <value>`
 
-Stores `value` under `key`. If the key already exists, it is overwritten.
+Stores `value` under `key`. If the key already exists, it is overwritten and any existing expiration is cleared.
 
 | Result | Meaning |
 |--------|---------|
@@ -69,12 +71,12 @@ OK
 
 **Syntax:** `GET <key>`
 
-Returns the value for `key`, or `null` if the key does not exist.
+Returns the value for `key`, or `null` if the key does not exist or has expired. Expired keys are removed when accessed.
 
 | Result | Meaning |
 |--------|---------|
 | *(value)* | Value stored for that key |
-| `null` | Key is missing |
+| `null` | Key is missing or expired |
 | `ERR wrong number of arguments for GET command` | Missing key, or more than one argument |
 
 **Examples:**
@@ -152,12 +154,41 @@ BMis> EXIST name
 ERR unknown command 'EXIST'
 ```
 
+### EXPIRE — set a key's time-to-live
+
+**Syntax:** `EXPIRE <key> <seconds>`
+
+Sets an expiration on an existing key. After the TTL elapses, `GET` returns `null` and removes the key. `SET` on the same key clears the expiration.
+
+| Result | Meaning |
+|--------|---------|
+| `1` | Expiration was set on an existing key |
+| `0` | Key does not exist |
+| `ERR wrong number of arguments for EXPIRE command` | Missing key or seconds, or too many arguments |
+| `ERR value is not an integer or out of range` | Seconds is not a valid integer |
+
+**Examples:**
+
+```text
+BMis> SET session active
+OK
+BMis> EXPIRE session 60
+1
+BMis> EXPIRE missing 60
+0
+BMis> EXPIRE session
+ERR wrong number of arguments for EXPIRE command
+BMis> EXPIRE session abc
+ERR value is not an integer or out of range
+```
+
 ## Errors
 
 | Message | Cause |
 |---------|--------|
 | `ERR unknown command '<COMMAND>'` | Command name is not recognized |
 | `ERR wrong number of arguments for <COMMAND> command` | Too few or too many arguments for that command |
+| `ERR value is not an integer or out of range` | `EXPIRE` seconds argument is not a valid integer |
 
 **Examples:**
 
@@ -177,6 +208,8 @@ Welcome to BMis CLI
 Type commands like: SET name Mayur
 BMis> SET name Mayur
 OK
+BMis> EXPIRE name 60
+1
 BMis> GET name
 Mayur
 BMis> EXISTS name
@@ -193,7 +226,6 @@ BMis> EXISTS name
 
 - No persistence — restarting clears all data
 - No networking — local CLI only
-- Key expiration is supported in the database layer but not yet available as a CLI command
 - No lists, hashes, or other data types yet
 - No authentication or multi-user access
 

@@ -121,3 +121,18 @@ test("EXISTS check multiple keys and returns the number of existing keys", () =>
 
     assert.strictEqual(result, 2);
 });
+
+test("EXPIRE sets expiration on an existing key", () => {
+    const executor = createExecutor();
+
+    executor.execute("SET session active");
+    const result = executor.execute("EXPIRE session 10");
+    assert.strictEqual(result, 1);
+});
+
+test("EXPIRES returns 0 for a missing key", () => {
+    const executor = createExecutor();
+
+    const result = executor.execute("EXPIRE session 10");
+    assert.strictEqual(result, 0);
+});

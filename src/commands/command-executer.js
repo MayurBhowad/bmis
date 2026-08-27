@@ -3,6 +3,7 @@ const setCommand = require('./set');
 const getCommand = require('./get');
 const delCommand = require('./del');
 const existsCommand = require('./exists');
+const expireCommand = require('./expire');
 
 class CommandExecuter {
     constructor(database) {
@@ -11,7 +12,8 @@ class CommandExecuter {
             SET: setCommand,
             GET: getCommand,
             DEL: delCommand,
-            EXISTS: existsCommand
+            EXISTS: existsCommand,
+            EXPIRE: expireCommand
         };
     }
 

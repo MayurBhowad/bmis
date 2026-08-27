@@ -8,14 +8,15 @@ BMis starts as a minimal key-value engine and is evolving toward a networked dat
 
 ## Current status
 
-v0.0.6 — interactive CLI over an in-memory key-value store, with unit tests for the database and command executer. The database layer now supports key expiration (lazy expiry on `GET`); `SET` clears expiration when overwriting a key. CLI commands for setting TTL are not exposed yet.
+v0.0.6 — interactive CLI over an in-memory key-value store, with unit tests for the database and command executer. Keys can expire via the `EXPIRE` command; expired keys are removed lazily on `GET`, and `SET` clears expiration when overwriting a key.
 
 | Command | Args | Description | Example |
 |---------|------|-------------|---------|
 | `SET` | key, value | Store a key-value pair | `SET name Mayur` → `OK` |
-| `GET` | key | Retrieve a value by key | `GET name` → `Mayur` (or `null` if missing) |
+| `GET` | key | Retrieve a value by key | `GET name` → `Mayur` (or `null` if missing or expired) |
 | `DEL` | key [key ...] | Remove one or more keys | `DEL name city` → `2` (count of keys deleted) |
 | `EXISTS` | key [key ...] | Count how many keys exist | `EXISTS name missing` → `1` |
+| `EXPIRE` | key, seconds | Set a key's time-to-live in seconds | `EXPIRE session 60` → `1` (or `0` if key missing) |
 
 Commands are case-insensitive. For `SET`, everything after the key is the value (spaces allowed).
 
@@ -23,6 +24,7 @@ Errors:
 
 - Unknown command → `ERR unknown command '<COMMAND>'`
 - Wrong arity → `ERR wrong number of arguments for <COMMAND> command`
+- Invalid `EXPIRE` seconds → `ERR value is not an integer or out of range`
 
 ## Project structure
 
@@ -36,7 +38,8 @@ src/
     ├── set.js                    # SET command
     ├── get.js                    # GET command
     ├── del.js                    # DEL command
-    └── exists.js                 # EXISTS command
+    ├── exists.js                 # EXISTS command
+    └── expire.js                 # EXPIRE command
 tests/
 ├── database.test.js              # Database unit tests (node:test)
 └── commands.test.js              # CommandExecuter / CLI command tests
@@ -86,7 +89,7 @@ ERR wrong number of arguments for SET command
 Incremental versions toward:
 
 - Multiple native data structures
-- Key expiration (database layer in place; CLI commands pending)
+- Key expiration
 - TCP networking and client-server communication
 - RESP-compatible protocol
 - Persistence
