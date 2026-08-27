@@ -1,6 +1,6 @@
 # BMis
 
-**Version:** v0.0.5
+**Version:** v0.0.6
 
 In-memory data platform.
 
@@ -8,7 +8,7 @@ BMis starts as a minimal key-value engine and is evolving toward a networked dat
 
 ## Current status
 
-v0.0.5 — interactive CLI over an in-memory key-value store, with unit tests for the database and command executer. Each command lives in its own module; the executer parses input and routes to the matching handler.
+v0.0.6 — interactive CLI over an in-memory key-value store, with unit tests for the database and command executer. The database layer now supports key expiration (lazy expiry on `GET`); CLI commands for setting TTL are not exposed yet.
 
 | Command | Args | Description | Example |
 |---------|------|-------------|---------|
@@ -30,7 +30,7 @@ Errors:
 src/
 ├── index.js                      # Interactive CLI entry point
 ├── database/
-│   └── database.js               # In-memory Map-backed store
+│   └── database.js               # In-memory Map-backed store with key expiration
 └── commands/
     ├── command-executer.js       # Parses input and routes to handlers
     ├── set.js                    # SET command
@@ -86,7 +86,7 @@ ERR wrong number of arguments for SET command
 Incremental versions toward:
 
 - Multiple native data structures
-- Key expiration
+- Key expiration (database layer in place; CLI commands pending)
 - TCP networking and client-server communication
 - RESP-compatible protocol
 - Persistence

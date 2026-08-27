@@ -37,3 +37,12 @@ test("EXISTS returns 0 for a missing key", () => {
     const database = new Database();
     assert.strictEqual(database.exists('name'), 0);
 });
+
+test("expired key return null", () => {
+    const database = new Database();
+
+    database.set('session', 'active');
+    database.expireAt('session', Date.now() - 1000);
+
+    assert.strictEqual(database.get('session'), null);
+});

@@ -1,6 +1,6 @@
 # BMis User Guide
 
-**Version:** v0.0.5
+**Version:** v0.0.6
 
 BMis is an interactive command-line key-value store. You type commands at the `BMis>` prompt; data lives in memory for that session only.
 
@@ -193,7 +193,8 @@ BMis> EXISTS name
 
 - No persistence — restarting clears all data
 - No networking — local CLI only
-- No key expiration, lists, hashes, or other data types yet
+- Key expiration is supported in the database layer but not yet available as a CLI command
+- No lists, hashes, or other data types yet
 - No authentication or multi-user access
 
 See the [README](./README.md) for project status and roadmap.
