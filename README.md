@@ -8,7 +8,7 @@ BMis starts as a minimal key-value engine and is evolving toward a networked dat
 
 ## Current status
 
-v0.0.6 — interactive CLI over an in-memory key-value store, with unit tests for the database and command executer. The database layer now supports key expiration (lazy expiry on `GET`); CLI commands for setting TTL are not exposed yet.
+v0.0.6 — interactive CLI over an in-memory key-value store, with unit tests for the database and command executer. The database layer now supports key expiration (lazy expiry on `GET`); `SET` clears expiration when overwriting a key. CLI commands for setting TTL are not exposed yet.
 
 | Command | Args | Description | Example |
 |---------|------|-------------|---------|

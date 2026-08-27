@@ -46,3 +46,13 @@ test("expired key return null", () => {
 
     assert.strictEqual(database.get('session'), null);
 });
+
+test("SET clears exisiting expiration", () => {
+    const database = new Database();
+    database.set('session', 'active');
+    database.expireAt('session', Date.now() + 100000);
+
+    database.set('session', 'renewed');
+
+    assert.strictEqual(database.expires.has('session'), false);
+});
