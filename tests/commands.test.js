@@ -183,4 +183,32 @@ test("EXPIRE validates missing arguments", () => {
       result,
       "ERR value is not an integer or out of range"
     );
-  });
+});
+
+test("TTL return -2 for missing key", () => {
+    const executor = createExecutor();
+    const result = executor.execute("TTL missing");
+    assert.strictEqual(result, -2);
+});
+
+test("TTL return -1 for a key without expiration", () => {
+    const executor = createExecutor();
+    executor.execute("SET name Mayur");
+    const result = executor.execute("TTL name");
+    assert.strictEqual(result, -1);
+});
+
+test("TTL returns the remaining seconds for an expiring key", () => {
+    const executor = createExecutor();
+    executor.execute("SET session active");
+    executor.execute("EXPIRE session 10");
+    const result = executor.execute("TTL session");
+    assert.ok(result >= 9);
+    assert.ok(result <= 10);
+});
+
+test("TTL validates arguments", () => {
+    const executor = createExecutor();
+    assert.strictEqual(executor.execute("TTL"), "ERR wrong number of arguments for TTL command");
+    assert.strictEqual(executor.execute("TTL key extra"), "ERR wrong number of arguments for TTL command");
+});

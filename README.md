@@ -8,7 +8,7 @@ BMis starts as a minimal key-value engine and is evolving toward a networked dat
 
 ## Current status
 
-v0.0.7 — interactive CLI over an in-memory key-value store, with unit tests for the database and command executer. Keys can expire via the `EXPIRE` command; expired keys are removed lazily on `GET`, and `SET` clears expiration when overwriting a key. The database layer also supports TTL queries (`ttl()`); a CLI `TTL` command is not exposed yet.
+v0.0.7 — interactive CLI over an in-memory key-value store, with unit tests for the database and command executer. Keys can expire via `EXPIRE` and remaining TTL can be queried with `TTL`; expired keys are removed lazily on `GET` and `TTL`, and `SET` clears expiration when overwriting a key.
 
 | Command | Args | Description | Example |
 |---------|------|-------------|---------|
@@ -17,6 +17,7 @@ v0.0.7 — interactive CLI over an in-memory key-value store, with unit tests fo
 | `DEL` | key [key ...] | Remove one or more keys | `DEL name city` → `2` (count of keys deleted) |
 | `EXISTS` | key [key ...] | Count how many keys exist | `EXISTS name missing` → `1` |
 | `EXPIRE` | key, seconds | Set a key's time-to-live in seconds | `EXPIRE session 60` → `1` (or `0` if key missing) |
+| `TTL` | key | Get remaining TTL in seconds | `TTL session` → `60` (or `-1` / `-2`; see below) |
 
 Commands are case-insensitive. For `SET`, everything after the key is the value (spaces allowed).
 
@@ -39,7 +40,8 @@ src/
     ├── get.js                    # GET command
     ├── del.js                    # DEL command
     ├── exists.js                 # EXISTS command
-    └── expire.js                 # EXPIRE command
+    ├── expire.js                 # EXPIRE command
+    └── ttl.js                    # TTL command
 tests/
 ├── database.test.js              # Database unit tests (node:test)
 └── commands.test.js              # CommandExecuter / CLI command tests

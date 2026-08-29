@@ -37,6 +37,7 @@ To leave the session, press `Ctrl+C` (or close the terminal). All stored keys ar
 - `GET` takes **exactly one** argument (the key). Extra arguments are an error. Returns `null` for missing or expired keys.
 - `DEL` and `EXISTS` accept **one or more** keys and return a count.
 - `EXPIRE` takes **exactly two** arguments: a key and a TTL in seconds.
+- `TTL` takes **exactly one** argument (the key). Returns `-2` if the key is missing or expired, `-1` if the key has no expiration, or the remaining seconds otherwise.
 - `SET` clears any existing expiration when overwriting a key.
 - Blank lines produce no output; the prompt simply returns.
 - Data is **in-memory only** — nothing is written to disk.
@@ -184,6 +185,38 @@ BMis> EXPIRE session 1.5
 ERR value is not an integer or out of range
 ```
 
+### TTL — get remaining time-to-live
+
+**Syntax:** `TTL <key>`
+
+Returns the remaining TTL for a key in seconds. Expired keys are removed when accessed and reported as missing.
+
+| Result | Meaning |
+|--------|---------|
+| *(number ≥ 0)* | Remaining seconds until expiration |
+| `-1` | Key exists but has no expiration |
+| `-2` | Key does not exist, or has already expired |
+| `ERR wrong number of arguments for TTL command` | Missing key, or more than one argument |
+
+**Examples:**
+
+```text
+BMis> SET session active
+OK
+BMis> TTL session
+-1
+BMis> EXPIRE session 60
+1
+BMis> TTL session
+60
+BMis> TTL missing
+-2
+BMis> TTL
+ERR wrong number of arguments for TTL command
+BMis> TTL session extra
+ERR wrong number of arguments for TTL command
+```
+
 ## Errors
 
 | Message | Cause |
@@ -212,6 +245,8 @@ BMis> SET name Mayur
 OK
 BMis> EXPIRE name 60
 1
+BMis> TTL name
+60
 BMis> GET name
 Mayur
 BMis> EXISTS name
@@ -228,7 +263,6 @@ BMis> EXISTS name
 
 - No persistence — restarting clears all data
 - No networking — local CLI only
-- TTL queries are supported in the database layer but not yet available as a CLI command
 - No lists, hashes, or other data types yet
 - No authentication or multi-user access
 
