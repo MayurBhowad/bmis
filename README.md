@@ -16,7 +16,7 @@ v0.0.7 — interactive CLI over an in-memory key-value store, with unit tests fo
 | `GET` | key | Retrieve a value by key | `GET name` → `Mayur` (or `null` if missing or expired) |
 | `DEL` | key [key ...] | Remove one or more keys | `DEL name city` → `2` (count of keys deleted) |
 | `EXISTS` | key [key ...] | Count how many keys exist | `EXISTS name missing` → `1` |
-| `EXPIRE` | key, seconds | Set a key's time-to-live in seconds | `EXPIRE session 60` → `1` (or `0` if key missing) |
+| `EXPIRE` | key, seconds | Set a key's time-to-live in seconds (`0` expires immediately) | `EXPIRE session 60` → `1` (or `0` if key missing) |
 | `TTL` | key | Get remaining TTL in seconds | `TTL session` → `60` (or `-1` / `-2`; see below) |
 
 Commands are case-insensitive. For `SET`, everything after the key is the value (spaces allowed).

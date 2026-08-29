@@ -159,7 +159,7 @@ ERR unknown command 'EXIST'
 
 **Syntax:** `EXPIRE <key> <seconds>`
 
-Sets an expiration on an existing key. `seconds` must be a whole number. After the TTL elapses, `GET` returns `null` and removes the key. `SET` on the same key clears the expiration.
+Sets an expiration on an existing key. `seconds` must be a whole number (`0` expires the key immediately). After the TTL elapses, `GET` returns `null` and removes the key. `SET` on the same key clears the expiration.
 
 | Result | Meaning |
 |--------|---------|
@@ -175,6 +175,10 @@ BMis> SET session active
 OK
 BMis> EXPIRE session 60
 1
+BMis> EXPIRE session 0
+1
+BMis> GET session
+null
 BMis> EXPIRE missing 60
 0
 BMis> EXPIRE session

@@ -212,3 +212,14 @@ test("TTL validates arguments", () => {
     assert.strictEqual(executor.execute("TTL"), "ERR wrong number of arguments for TTL command");
     assert.strictEqual(executor.execute("TTL key extra"), "ERR wrong number of arguments for TTL command");
 });
+
+test("EXPIRE with 0 immediately expires the key", () => {
+    const executor = createExecutor();
+
+    executor.execute("SET session active");
+
+    assert.strictEqual(executor.execute("EXPIRE session 0"), 1);
+    assert.strictEqual(executor.execute("GET session"), null);
+    assert.strictEqual(executor.execute("EXISTS session"), 0);
+    assert.strictEqual(executor.execute("TTL session"), -2);
+});
