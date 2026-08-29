@@ -56,3 +56,24 @@ test("SET clears exisiting expiration", () => {
 
     assert.strictEqual(database.expires.has('session'), false);
 });
+
+test("TTL returns -2 for missing key", () => {
+    const database = new Database();
+    assert.strictEqual(database.ttl('missing'), -2);
+});
+
+test("TTL returns -1 for a key without expiration", () => {
+    const database = new Database();
+    database.set('name', 'Mayur');
+    assert.strictEqual(database.ttl('name'), -1);
+});
+
+test("TTL returns the remaining seconds for an expiring key", () => {
+    const database = new Database();
+    database.set('session', 'active');
+    database.expireAt('session', Date.now() + 10000);
+    const ttl = database.ttl('session');
+
+    assert.ok(ttl >= 0);
+    assert.ok(ttl <= 10);
+});

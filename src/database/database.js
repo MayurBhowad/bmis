@@ -4,6 +4,22 @@ class Database {
         this.expires = new Map();
     }
 
+    ttl(key) {
+        if(!this.data.has(key)) {
+            return -2;
+        }
+        if(this.isExpired(key)) {
+            this.deleteKey(key);
+            return -2;
+        }
+        const expiredAt = this.expires.get(key);
+        if(expiredAt === undefined) {
+            return -1;
+        }
+        const remainingMilliseconds = expiredAt - Date.now();
+        return Math.ceil(remainingMilliseconds / 1000);
+    }
+
     set(key, value) {
         this.data.set(key, value);
         this.expires.delete(key);

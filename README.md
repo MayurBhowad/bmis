@@ -1,6 +1,6 @@
 # BMis
 
-**Version:** v0.0.6
+**Version:** v0.0.7
 
 In-memory data platform.
 
@@ -8,7 +8,7 @@ BMis starts as a minimal key-value engine and is evolving toward a networked dat
 
 ## Current status
 
-v0.0.6 — interactive CLI over an in-memory key-value store, with unit tests for the database and command executer. Keys can expire via the `EXPIRE` command; expired keys are removed lazily on `GET`, and `SET` clears expiration when overwriting a key.
+v0.0.7 — interactive CLI over an in-memory key-value store, with unit tests for the database and command executer. Keys can expire via the `EXPIRE` command; expired keys are removed lazily on `GET`, and `SET` clears expiration when overwriting a key. The database layer also supports TTL queries (`ttl()`); a CLI `TTL` command is not exposed yet.
 
 | Command | Args | Description | Example |
 |---------|------|-------------|---------|
@@ -32,7 +32,7 @@ Errors:
 src/
 ├── index.js                      # Interactive CLI entry point
 ├── database/
-│   └── database.js               # In-memory Map-backed store with key expiration
+│   └── database.js               # In-memory Map-backed store with expiration and TTL
 └── commands/
     ├── command-executer.js       # Parses input and routes to handlers
     ├── set.js                    # SET command
