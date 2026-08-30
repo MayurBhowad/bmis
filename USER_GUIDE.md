@@ -1,6 +1,6 @@
 # BMis User Guide
 
-**Version:** v0.0.7
+**Version:** v0.0.8
 
 BMis is an interactive command-line key-value store. You type commands at the `BMis>` prompt; data lives in memory for that session only.
 
@@ -41,6 +41,7 @@ To leave the session, press `Ctrl+C` (or close the terminal). All stored keys ar
 - `SET` clears any existing expiration when overwriting a key.
 - Blank lines produce no output; the prompt simply returns.
 - Data is **in-memory only** — nothing is written to disk.
+- All values are currently stored as **strings**.
 
 ## Commands
 
@@ -267,7 +268,7 @@ BMis> EXISTS name
 
 - No persistence — restarting clears all data
 - No networking — local CLI only
-- No lists, hashes, or other data types yet
+- No lists, hashes, or other data types yet (only strings are supported)
 - No authentication or multi-user access
 
 See the [README](./README.md) for project status and roadmap.
