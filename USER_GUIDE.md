@@ -33,7 +33,7 @@ To leave the session, press `Ctrl+C` (or close the terminal). All stored keys ar
 
 - Commands are **case-insensitive** (`SET`, `set`, and `Set` are the same).
 - Arguments are separated by whitespace.
-- For `SET`, everything after the key is treated as the value (so values may contain spaces).
+- For `SET`, everything after the key is the value (spaces allowed), unless `EX seconds` is appended to set expiration in the same command.
 - `GET` takes **exactly one** argument (the key). Extra arguments are an error. Returns `null` for missing or expired keys.
 - `DEL` and `EXISTS` accept **one or more** keys and return a count.
 - `EXPIRE` takes **exactly two** arguments: a key and a TTL in seconds.
@@ -48,14 +48,16 @@ To leave the session, press `Ctrl+C` (or close the terminal). All stored keys ar
 
 ### SET — store a value
 
-**Syntax:** `SET <key> <value>`
+**Syntax:** `SET <key> <value>` or `SET <key> <value> EX <seconds>`
 
-Stores `value` under `key`. If the key already exists, it is overwritten and any existing expiration is cleared.
+Stores `value` under `key`. If the key already exists, it is overwritten and any existing expiration is cleared. Use `EX` to set expiration in seconds as part of the same command (`EX` must be the last option, followed by seconds).
 
 | Result | Meaning |
 |--------|---------|
 | `OK` | Value was stored |
 | `ERR wrong number of arguments for SET command` | Missing key or value |
+| `ERR syntax error` | `EX` is missing seconds or is not in the correct position |
+| `ERR invalid expire time in 'SET' command` | `EX` seconds is not a valid whole number |
 
 **Examples:**
 
@@ -68,6 +70,16 @@ BMis> GET greeting
 Hello World
 BMis> set name mayur
 OK
+BMis> SET session active EX 60
+OK
+BMis> TTL session
+60
+BMis> SET key value EX
+ERR syntax error
+BMis> SET key value EX abc
+ERR invalid expire time in 'SET' command
+BMis> SET key value EX 1.5
+ERR invalid expire time in 'SET' command
 ```
 
 ### GET — retrieve a value
@@ -257,6 +269,8 @@ ERR wrong number of arguments for TYPE command
 | `ERR unknown command '<COMMAND>'` | Command name is not recognized |
 | `ERR wrong number of arguments for <COMMAND> command` | Too few or too many arguments for that command |
 | `ERR value is not an integer or out of range` | `EXPIRE` seconds argument is not a valid whole number |
+| `ERR syntax error` | `SET ... EX` is missing seconds or `EX` is not in the correct position |
+| `ERR invalid expire time in 'SET' command` | `SET ... EX` seconds argument is not a valid whole number |
 
 **Examples:**
 
@@ -278,9 +292,9 @@ BMis> SET name Mayur
 OK
 BMis> TYPE name
 string
-BMis> EXPIRE name 60
-1
-BMis> TTL name
+BMis> SET session active EX 60
+OK
+BMis> TTL session
 60
 BMis> GET name
 Mayur

@@ -8,11 +8,11 @@ BMis starts as a minimal key-value engine and is evolving toward a networked dat
 
 ## Current status
 
-v0.0.8 — interactive CLI over an in-memory key-value store, with unit tests for the database and command executer. Values are stored internally with type metadata (strings only for now) and can be inspected with `TYPE`. Keys can expire via `EXPIRE` and remaining TTL can be queried with `TTL`; expired keys are removed lazily on `GET`, `TTL`, and `TYPE`, and `SET` clears expiration when overwriting a key.
+v0.0.8 — interactive CLI over an in-memory key-value store, with unit tests for the database and command executer. Values are stored internally with type metadata (strings only for now) and can be inspected with `TYPE`. Keys can expire via `EXPIRE`, `SET ... EX`, or remaining TTL can be queried with `TTL`; expired keys are removed lazily on `GET`, `TTL`, and `TYPE`, and `SET` clears expiration when overwriting a key.
 
 | Command | Args | Description | Example |
 |---------|------|-------------|---------|
-| `SET` | key, value | Store a key-value pair | `SET name Mayur` → `OK` |
+| `SET` | key, value [`EX` seconds] | Store a key-value pair, optionally with expiration | `SET session active EX 60` → `OK` |
 | `GET` | key | Retrieve a value by key | `GET name` → `Mayur` (or `null` if missing or expired) |
 | `DEL` | key [key ...] | Remove one or more keys | `DEL name city` → `2` (count of keys deleted) |
 | `EXISTS` | key [key ...] | Count how many keys exist | `EXISTS name missing` → `1` |
@@ -20,13 +20,15 @@ v0.0.8 — interactive CLI over an in-memory key-value store, with unit tests fo
 | `TTL` | key | Get remaining TTL in seconds | `TTL session` → `60` (or `-1` / `-2`; see below) |
 | `TYPE` | key | Get the type of a key | `TYPE name` → `string` (or `none` if missing or expired) |
 
-Commands are case-insensitive. For `SET`, everything after the key is the value (spaces allowed).
+Commands are case-insensitive. For `SET`, everything after the key is the value (spaces allowed), unless `EX seconds` is appended to set expiration in the same command.
 
 Errors:
 
 - Unknown command → `ERR unknown command '<COMMAND>'`
 - Wrong arity → `ERR wrong number of arguments for <COMMAND> command`
 - Invalid `EXPIRE` seconds (non-integer or out of range) → `ERR value is not an integer or out of range`
+- Invalid `SET ... EX` syntax → `ERR syntax error`
+- Invalid `SET ... EX` seconds → `ERR invalid expire time in 'SET' command`
 
 ## Project structure
 

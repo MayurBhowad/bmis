@@ -240,3 +240,33 @@ test("TYPE validates arguments", () => {
     assert.strictEqual(executor.execute("TYPE"), "ERR wrong number of arguments for TYPE command");
     assert.strictEqual(executor.execute("TYPE key extra"), "ERR wrong number of arguments for TYPE command");
 });
+
+test("SET support EX option to set expiration", () => {
+    const executor = createExecutor();
+    assert.strictEqual(executor.execute("SET session active EX 10"), "OK");
+    const ttl = executor.execute("TTL session");
+    assert.ok(ttl >= 1 && ttl <= 10);
+});
+
+test("SET EX requires seconds", () => {
+    const executor = createExecutor();
+    assert.strictEqual(executor.execute("SET key value EX"), "ERR syntax error");
+});
+
+test("SET EX rejects non-integer seconds", () => {
+    const executor = createExecutor();
+
+    assert.strictEqual(
+        executor.execute("SET key value EX abc"),
+        "ERR invalid expire time in 'SET' command"
+    );
+});
+
+test("SET EX rejects decimal seconds", () => {
+    const executor = createExecutor();
+
+    assert.strictEqual(
+        executor.execute("SET key value EX 1.5"),
+        "ERR invalid expire time in 'SET' command"
+    );
+});
