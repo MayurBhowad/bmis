@@ -223,3 +223,20 @@ test("EXPIRE with 0 immediately expires the key", () => {
     assert.strictEqual(executor.execute("EXISTS session"), 0);
     assert.strictEqual(executor.execute("TTL session"), -2);
 });
+
+test("TYPE returns string for a string key", () => {
+    const executor = createExecutor();
+    executor.execute("SET name Mayur");
+    assert.strictEqual(executor.execute("TYPE name"), "string");
+});
+
+test("TYPE returns none for a missing key", () => {
+    const executor = createExecutor();
+    assert.strictEqual(executor.execute("TYPE missing"), "none");
+});
+
+test("TYPE validates arguments", () => {
+    const executor = createExecutor();
+    assert.strictEqual(executor.execute("TYPE"), "ERR wrong number of arguments for TYPE command");
+    assert.strictEqual(executor.execute("TYPE key extra"), "ERR wrong number of arguments for TYPE command");
+});

@@ -71,6 +71,17 @@ class Database {
         this.data.delete(key);
         this.expires.delete(key);
     }
+
+    type(key) {
+        if(!this.data.has(key)) {
+            return 'none';
+        }
+        if(this.isExpired(key)) {
+            this.deleteKey(key);
+            return 'none';
+        }
+        return this.data.get(key).type;
+    }
 }
 
 module.exports = Database;

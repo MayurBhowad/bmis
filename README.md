@@ -8,7 +8,7 @@ BMis starts as a minimal key-value engine and is evolving toward a networked dat
 
 ## Current status
 
-v0.0.8 — interactive CLI over an in-memory key-value store, with unit tests for the database and command executer. Values are stored internally with type metadata (strings only for now). Keys can expire via `EXPIRE` and remaining TTL can be queried with `TTL`; expired keys are removed lazily on `GET` and `TTL`, and `SET` clears expiration when overwriting a key.
+v0.0.8 — interactive CLI over an in-memory key-value store, with unit tests for the database and command executer. Values are stored internally with type metadata (strings only for now) and can be inspected with `TYPE`. Keys can expire via `EXPIRE` and remaining TTL can be queried with `TTL`; expired keys are removed lazily on `GET`, `TTL`, and `TYPE`, and `SET` clears expiration when overwriting a key.
 
 | Command | Args | Description | Example |
 |---------|------|-------------|---------|
@@ -18,6 +18,7 @@ v0.0.8 — interactive CLI over an in-memory key-value store, with unit tests fo
 | `EXISTS` | key [key ...] | Count how many keys exist | `EXISTS name missing` → `1` |
 | `EXPIRE` | key, seconds | Set a key's time-to-live in seconds (`0` expires immediately) | `EXPIRE session 60` → `1` (or `0` if key missing) |
 | `TTL` | key | Get remaining TTL in seconds | `TTL session` → `60` (or `-1` / `-2`; see below) |
+| `TYPE` | key | Get the type of a key | `TYPE name` → `string` (or `none` if missing or expired) |
 
 Commands are case-insensitive. For `SET`, everything after the key is the value (spaces allowed).
 
@@ -41,7 +42,8 @@ src/
     ├── del.js                    # DEL command
     ├── exists.js                 # EXISTS command
     ├── expire.js                 # EXPIRE command
-    └── ttl.js                    # TTL command
+    ├── ttl.js                    # TTL command
+    └── type.js                   # TYPE command
 tests/
 ├── database.test.js              # Database unit tests (node:test)
 └── commands.test.js              # CommandExecuter / CLI command tests

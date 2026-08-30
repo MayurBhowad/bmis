@@ -38,6 +38,7 @@ To leave the session, press `Ctrl+C` (or close the terminal). All stored keys ar
 - `DEL` and `EXISTS` accept **one or more** keys and return a count.
 - `EXPIRE` takes **exactly two** arguments: a key and a TTL in seconds.
 - `TTL` takes **exactly one** argument (the key). Returns `-2` if the key is missing or expired, `-1` if the key has no expiration, or the remaining seconds otherwise.
+- `TYPE` takes **exactly one** argument (the key). Returns `string` for stored values, or `none` if the key is missing or expired.
 - `SET` clears any existing expiration when overwriting a key.
 - Blank lines produce no output; the prompt simply returns.
 - Data is **in-memory only** — nothing is written to disk.
@@ -222,6 +223,33 @@ BMis> TTL session extra
 ERR wrong number of arguments for TTL command
 ```
 
+### TYPE — get the type of a key
+
+**Syntax:** `TYPE <key>`
+
+Returns the type of the value stored at `key`. Expired keys are removed when accessed and reported as missing.
+
+| Result | Meaning |
+|--------|---------|
+| `string` | Key holds a string value (set via `SET`) |
+| `none` | Key does not exist, or has already expired |
+| `ERR wrong number of arguments for TYPE command` | Missing key, or more than one argument |
+
+**Examples:**
+
+```text
+BMis> SET name Mayur
+OK
+BMis> TYPE name
+string
+BMis> TYPE missing
+none
+BMis> TYPE
+ERR wrong number of arguments for TYPE command
+BMis> TYPE name extra
+ERR wrong number of arguments for TYPE command
+```
+
 ## Errors
 
 | Message | Cause |
@@ -248,6 +276,8 @@ Welcome to BMis CLI
 Type commands like: SET name Mayur
 BMis> SET name Mayur
 OK
+BMis> TYPE name
+string
 BMis> EXPIRE name 60
 1
 BMis> TTL name

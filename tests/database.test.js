@@ -86,3 +86,8 @@ test("SET stores a string type value", () => {
     assert.deepStrictEqual(entry, { value: 'Mayur', type: 'string' });
 });
 
+test("database reports type of a key", () => {
+    const database = new Database();
+    database.set('name', 'Mayur');
+    assert.strictEqual(database.type('name'), 'string');
+});

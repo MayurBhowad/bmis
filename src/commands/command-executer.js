@@ -5,6 +5,7 @@ const delCommand = require('./del');
 const existsCommand = require('./exists');
 const expireCommand = require('./expire');
 const ttlCommand = require('./ttl');
+const typeCommand = require('./type');
 
 class CommandExecuter {
     constructor(database) {
@@ -15,7 +16,8 @@ class CommandExecuter {
             DEL: delCommand,
             EXISTS: existsCommand,
             EXPIRE: expireCommand,
-            TTL: ttlCommand
+            TTL: ttlCommand,
+            TYPE: typeCommand
         };
     }
 
