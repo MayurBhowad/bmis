@@ -21,7 +21,7 @@ class Database {
     }
 
     set(key, value) {
-        this.data.set(key, value);
+        this.data.set(key, { value, type: 'string' });
         this.expires.delete(key);
         return "OK";
     }
@@ -34,7 +34,7 @@ class Database {
             this.deleteKey(key);
             return null;
         }
-        return this.data.get(key);
+        return this.data.get(key).value;
     }
 
     del(key) {

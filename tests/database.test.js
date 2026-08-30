@@ -77,3 +77,12 @@ test("TTL returns the remaining seconds for an expiring key", () => {
     assert.ok(ttl >= 0);
     assert.ok(ttl <= 10);
 });
+
+test("SET stores a string type value", () => {
+    const database = new Database();
+    database.set('name', 'Mayur');
+    const entry = database.data.get('name');
+
+    assert.deepStrictEqual(entry, { value: 'Mayur', type: 'string' });
+});
+

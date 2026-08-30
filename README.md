@@ -8,7 +8,7 @@ BMis starts as a minimal key-value engine and is evolving toward a networked dat
 
 ## Current status
 
-v0.0.7 — interactive CLI over an in-memory key-value store, with unit tests for the database and command executer. Keys can expire via `EXPIRE` and remaining TTL can be queried with `TTL`; expired keys are removed lazily on `GET` and `TTL`, and `SET` clears expiration when overwriting a key.
+v0.0.7 — interactive CLI over an in-memory key-value store, with unit tests for the database and command executer. Values are stored internally with type metadata (strings only for now). Keys can expire via `EXPIRE` and remaining TTL can be queried with `TTL`; expired keys are removed lazily on `GET` and `TTL`, and `SET` clears expiration when overwriting a key.
 
 | Command | Args | Description | Example |
 |---------|------|-------------|---------|
@@ -33,7 +33,7 @@ Errors:
 src/
 ├── index.js                      # Interactive CLI entry point
 ├── database/
-│   └── database.js               # In-memory Map-backed store with expiration and TTL
+│   └── database.js               # Typed in-memory store with expiration and TTL
 └── commands/
     ├── command-executer.js       # Parses input and routes to handlers
     ├── set.js                    # SET command
@@ -90,7 +90,7 @@ ERR wrong number of arguments for SET command
 
 Incremental versions toward:
 
-- Multiple native data structures
+- Multiple native data structures (typed value storage in place; additional types pending)
 - Key expiration
 - TCP networking and client-server communication
 - RESP-compatible protocol
