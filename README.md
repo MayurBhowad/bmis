@@ -1,6 +1,6 @@
 # BMis
 
-**Version:** v0.0.8
+**Version:** v0.4.0
 
 In-memory data platform.
 
@@ -8,7 +8,7 @@ BMis starts as a minimal key-value engine and is evolving toward a networked dat
 
 ## Current status
 
-v0.0.8 — interactive CLI over an in-memory key-value store, with unit tests for the database and command executer. Values are stored internally with type metadata (strings only for now) and can be inspected with `TYPE`. Keys can expire via `EXPIRE`, `SET ... EX`, or remaining TTL can be queried with `TTL`; expired keys are removed lazily on `GET`, `TTL`, and `TYPE`, and `SET` clears expiration when overwriting a key.
+v0.4.0 — interactive CLI over an in-memory key-value store, with unit tests for the database, parser, and command executer. Values are stored internally with type metadata (strings only for now) and can be inspected with `TYPE`. Keys can expire via `EXPIRE`, `SET ... EX`, or remaining TTL can be queried with `TTL`; expired keys are removed lazily on `GET`, `TTL`, and `TYPE`, and `SET` clears expiration when overwriting a key.
 
 | Command | Args | Description | Example |
 |---------|------|-------------|---------|
@@ -40,6 +40,7 @@ src/
 └── commands/
     ├── command-executer.js       # Routes parsed input to command handlers
     ├── parser.js                 # Parses CLI input into command and args
+    ├── commands.js               # Command registry
     ├── set.js                    # SET command
     ├── get.js                    # GET command
     ├── del.js                    # DEL command

@@ -1,24 +1,9 @@
 const parse = require('./parser');
-const setCommand = require('./set');
-const getCommand = require('./get');
-const delCommand = require('./del');
-const existsCommand = require('./exists');
-const expireCommand = require('./expire');
-const ttlCommand = require('./ttl');
-const typeCommand = require('./type');
+const commands = require('./commands');
 
 class CommandExecuter {
     constructor(database) {
         this.database = database;
-        this.commands = {
-            SET: setCommand,
-            GET: getCommand,
-            DEL: delCommand,
-            EXISTS: existsCommand,
-            EXPIRE: expireCommand,
-            TTL: ttlCommand,
-            TYPE: typeCommand
-        };
     }
 
     execute(input) {
@@ -30,7 +15,7 @@ class CommandExecuter {
 
         const { command, args } = parsed;
 
-        const commandHandler = this.commands[command];
+        const commandHandler = commands[command];
         
         if(!commandHandler) {
             return `ERR unknown command '${command}'`;
