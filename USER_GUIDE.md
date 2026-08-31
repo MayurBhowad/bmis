@@ -39,7 +39,8 @@ To leave the session, press `Ctrl+C` (or close the terminal). All stored keys ar
 - `EXPIRE` takes **exactly two** arguments: a key and a TTL in seconds.
 - `TTL` takes **exactly one** argument (the key). Returns `-2` if the key is missing or expired, `-1` if the key has no expiration, or the remaining seconds otherwise.
 - `TYPE` takes **exactly one** argument (the key). Returns `string` for stored values, or `none` if the key is missing or expired.
-- `SET` clears any existing expiration when overwriting a key.
+- `INCR` and `DECR` each take **exactly one** argument (the key). They operate on integer string values and return the new value as a number.
+- `SET` clears any existing expiration when overwriting a key. `INCR` and `DECR` also clear expiration when they update a key.
 - Blank lines produce no output; the prompt simply returns.
 - Data is **in-memory only** — nothing is written to disk.
 - All values are currently stored as **strings**.
@@ -262,13 +263,75 @@ BMis> TYPE name extra
 ERR wrong number of arguments for TYPE command
 ```
 
+### INCR — increment an integer value
+
+**Syntax:** `INCR <key>`
+
+Increments the integer stored at `key` by 1. Values are stored as strings; the command returns the new value as a number. If the key does not exist, it is created with value `1`.
+
+| Result | Meaning |
+|--------|---------|
+| *(number)* | New value after increment |
+| `ERR wrong number of arguments for 'INCR' command` | Missing key, or more than one argument |
+| `ERR value is not an integer or out of range` | Existing value is not a valid integer string |
+
+**Examples:**
+
+```text
+BMis> SET counter 10
+OK
+BMis> INCR counter
+11
+BMis> GET counter
+11
+BMis> INCR newkey
+1
+BMis> SET counter hello
+OK
+BMis> INCR counter
+ERR value is not an integer or out of range
+BMis> INCR
+ERR wrong number of arguments for 'INCR' command
+```
+
+### DECR — decrement an integer value
+
+**Syntax:** `DECR <key>`
+
+Decrements the integer stored at `key` by 1. Values are stored as strings; the command returns the new value as a number. If the key does not exist, it is created with value `-1`.
+
+| Result | Meaning |
+|--------|---------|
+| *(number)* | New value after decrement |
+| `ERR wrong number of arguments for 'DECR' command` | Missing key, or more than one argument |
+| `ERR value is not an integer or out of range` | Existing value is not a valid integer string |
+
+**Examples:**
+
+```text
+BMis> SET counter 10
+OK
+BMis> DECR counter
+9
+BMis> GET counter
+9
+BMis> DECR newkey
+-1
+BMis> SET counter hello
+OK
+BMis> DECR counter
+ERR value is not an integer or out of range
+BMis> DECR
+ERR wrong number of arguments for 'DECR' command
+```
+
 ## Errors
 
 | Message | Cause |
 |---------|--------|
 | `ERR unknown command '<COMMAND>'` | Command name is not recognized |
 | `ERR wrong number of arguments for <COMMAND> command` | Too few or too many arguments for that command |
-| `ERR value is not an integer or out of range` | `EXPIRE` seconds argument is not a valid whole number |
+| `ERR value is not an integer or out of range` | `EXPIRE`, `INCR`, or `DECR` received a non-integer value |
 | `ERR syntax error` | `SET ... EX` is missing seconds or `EX` is not in the correct position |
 | `ERR invalid expire time in 'SET' command` | `SET ... EX` seconds argument is not a valid whole number |
 

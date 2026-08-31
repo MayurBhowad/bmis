@@ -8,7 +8,7 @@ BMis starts as a minimal key-value engine and is evolving toward a networked dat
 
 ## Current status
 
-v0.4.0 — interactive CLI over an in-memory key-value store, with unit tests for the database, parser, and command executer. Values are stored internally with type metadata (strings only for now) and can be inspected with `TYPE`. Keys can expire via `EXPIRE`, `SET ... EX`, or remaining TTL can be queried with `TTL`; expired keys are removed lazily on `GET`, `TTL`, and `TYPE`, and `SET` clears expiration when overwriting a key.
+v0.4.0 — interactive CLI over an in-memory key-value store, with unit tests for the database, parser, and command executer. Values are stored internally with type metadata (strings only for now) and can be inspected with `TYPE`. Integer strings can be incremented or decremented with `INCR` and `DECR`. Keys can expire via `EXPIRE`, `SET ... EX`, or remaining TTL can be queried with `TTL`; expired keys are removed lazily on `GET`, `TTL`, and `TYPE`, and `SET` clears expiration when overwriting a key.
 
 | Command | Args | Description | Example |
 |---------|------|-------------|---------|
@@ -19,6 +19,8 @@ v0.4.0 — interactive CLI over an in-memory key-value store, with unit tests fo
 | `EXPIRE` | key, seconds | Set a key's time-to-live in seconds (`0` expires immediately) | `EXPIRE session 60` → `1` (or `0` if key missing) |
 | `TTL` | key | Get remaining TTL in seconds | `TTL session` → `60` (or `-1` / `-2`; see below) |
 | `TYPE` | key | Get the type of a key | `TYPE name` → `string` (or `none` if missing or expired) |
+| `INCR` | key | Increment an integer string value by 1 | `INCR counter` → `11` (creates key as `1` if missing) |
+| `DECR` | key | Decrement an integer string value by 1 | `DECR counter` → `9` (creates key as `-1` if missing) |
 
 Commands are case-insensitive. For `SET`, everything after the key is the value (spaces allowed), unless `EX seconds` is appended to set expiration in the same command.
 
@@ -27,6 +29,7 @@ Errors:
 - Unknown command → `ERR unknown command '<COMMAND>'`
 - Wrong arity → `ERR wrong number of arguments for <COMMAND> command`
 - Invalid `EXPIRE` seconds (non-integer or out of range) → `ERR value is not an integer or out of range`
+- Invalid `INCR` / `DECR` value (non-integer) → `ERR value is not an integer or out of range`
 - Invalid `SET ... EX` syntax → `ERR syntax error`
 - Invalid `SET ... EX` seconds → `ERR invalid expire time in 'SET' command`
 
@@ -36,7 +39,8 @@ Errors:
 src/
 ├── index.js                      # Interactive CLI entry point
 ├── database/
-│   └── database.js               # In-memory typed value store with expiration and TTL
+│   ├── database.js               # Typed value store with expiration and TTL
+│   └── storage.js                # Low-level Map-backed storage layer
 └── commands/
     ├── command-executer.js       # Routes parsed input to command handlers
     ├── parser.js                 # Parses CLI input into command and args
@@ -47,7 +51,9 @@ src/
     ├── exists.js                 # EXISTS command
     ├── expire.js                 # EXPIRE command
     ├── ttl.js                    # TTL command
-    └── type.js                   # TYPE command
+    ├── type.js                   # TYPE command
+    ├── incr.js                   # INCR command
+    └── decr.js                   # DECR command
 tests/
 ├── database.test.js              # Database unit tests (node:test)
 ├── commands.test.js              # CommandExecuter / CLI command tests

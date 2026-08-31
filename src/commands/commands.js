@@ -6,4 +6,6 @@ module.exports = {
     EXPIRE: require('./expire'),
     TTL: require('./ttl'),
     TYPE: require('./type'),
+    INCR: require('./incr'),
+    DECR: require('./decr'),
 };

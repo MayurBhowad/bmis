@@ -1,7 +1,13 @@
 const test = require('node:test');
 const assert = require('node:assert');
 
+const Storage = require('../src/database/storage');
 const Database = require('../src/database/database');
+
+function createDatabase() {
+    const storage = new Storage();
+    return new Database(storage);
+}
 
 test("SET stores and GET retrieves a value", () => {
     const database = new Database();
@@ -54,7 +60,7 @@ test("SET clears exisiting expiration", () => {
 
     database.set('session', 'renewed');
 
-    assert.strictEqual(database.expires.has('session'), false);
+    assert.strictEqual(database.storage.getExpiration('session'), undefined);
 });
 
 test("TTL returns -2 for missing key", () => {
@@ -81,7 +87,7 @@ test("TTL returns the remaining seconds for an expiring key", () => {
 test("SET stores a string type value", () => {
     const database = new Database();
     database.set('name', 'Mayur');
-    const entry = database.data.get('name');
+    const entry = database.storage.get('name');
 
     assert.deepStrictEqual(entry, { value: 'Mayur', type: 'string' });
 });

@@ -1,18 +1,19 @@
+const Storage = require('./storage');
+
 class Database {
     constructor() {
-        this.data = new Map();
-        this.expires = new Map();
+        this.storage = new Storage();
     }
 
     ttl(key) {
-        if(!this.data.has(key)) {
+        if(!this.storage.has(key)) {
             return -2;
         }
         if(this.isExpired(key)) {
             this.deleteKey(key);
             return -2;
         }
-        const expiredAt = this.expires.get(key);
+        const expiredAt = this.storage.getExpiration(key);
         if(expiredAt === undefined) {
             return -1;
         }
@@ -21,24 +22,24 @@ class Database {
     }
 
     set(key, value) {
-        this.data.set(key, { value, type: 'string' });
-        this.expires.delete(key);
+        this.storage.set(key, { value, type: 'string' });
+        this.storage.deleteExpiration(key);
         return "OK";
     }
 
     get(key) {
-        if (!this.data.has(key)) {
+        if (!this.storage.has(key)) {
             return null;
         }
         if(this.isExpired(key)) {
             this.deleteKey(key);
             return null;
         }
-        return this.data.get(key).value;
+        return this.storage.get(key).value;
     }
 
     del(key) {
-        if(!this.data.has(key)) {
+        if(!this.storage.has(key)) {
             return 0;
         }
         this.deleteKey(key);
@@ -46,20 +47,20 @@ class Database {
     }
 
     exists(key) {
-        return this.data.has(key) ? 1 : 0;
+        return this.storage.has(key) ? 1 : 0;
     }
 
     expireAt(key, timestamp) {
-        if(!this.data.has(key)) {
+        if(!this.storage.has(key)) {
             return 0;
         }
 
-        this.expires.set(key, timestamp);
+        this.storage.setExpiration(key, timestamp);
         return 1;
     }
 
     isExpired(key) {
-        const expiredAt = this.expires.get(key);
+        const expiredAt = this.storage.getExpiration(key);
         if(expiredAt === undefined) {
             return false;
         }
@@ -68,19 +69,19 @@ class Database {
     }
 
     deleteKey(key) {
-        this.data.delete(key);
-        this.expires.delete(key);
+        this.storage.delete(key);
+        this.storage.deleteExpiration(key);
     }
 
     type(key) {
-        if(!this.data.has(key)) {
+        if(!this.storage.has(key)) {
             return 'none';
         }
         if(this.isExpired(key)) {
             this.deleteKey(key);
             return 'none';
         }
-        return this.data.get(key).type;
+        return this.storage.get(key).type;
     }
 }
 

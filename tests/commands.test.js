@@ -1,11 +1,11 @@
 const test = require('node:test');
 const assert = require('node:assert');
 
-const database = require('../src/database/database');
+const Database = require('../src/database/database');
 const CE = require('../src/commands/command-executer');
 
 function createExecutor() {
-    const db = new database();
+    const db = new Database();
     return new CE(db);
 }
 
@@ -269,4 +269,54 @@ test("SET EX rejects decimal seconds", () => {
         executor.execute("SET key value EX 1.5"),
         "ERR invalid expire time in 'SET' command"
     );
+});
+
+test("INCR increments an existing integer value", () => {
+    const executor = createExecutor();
+    executor.execute("SET counter 10");
+    assert.strictEqual(executor.execute("INCR counter"), 11);
+    assert.strictEqual(executor.execute("GET counter"), "11");
+});
+
+test("INCR create missing key with value 1", () => {
+    const executor = createExecutor();
+    assert.strictEqual(executor.execute("INCR counter"), 1);
+    assert.strictEqual(executor.execute("GET counter"), "1");
+});
+
+test("INCR rejects non-integer values", () => {
+    const executor = createExecutor();
+    executor.execute("SET counter hello");
+    assert.strictEqual(executor.execute("INCR counter"), "ERR value is not an integer or out of range");
+});
+
+test("INCR validates arguments", () => {
+    const executor = createExecutor();
+    assert.strictEqual(executor.execute("INCR"), "ERR wrong number of arguments for 'INCR' command");
+    assert.strictEqual(executor.execute("INCR key extra"), "ERR wrong number of arguments for 'INCR' command");
+});
+
+test("DECR decrements an existing integer value", () => {
+    const executor = createExecutor();
+    executor.execute("SET counter 10");
+    assert.strictEqual(executor.execute("DECR counter"), 9);
+    assert.strictEqual(executor.execute("GET counter"), "9");
+});
+
+test("DECR create missing key with value -1", () => {
+    const executor = createExecutor();
+    assert.strictEqual(executor.execute("DECR counter"), -1);
+    assert.strictEqual(executor.execute("GET counter"), "-1");
+});
+
+test("DECR rejects non-integer values", () => {
+    const executor = createExecutor();
+    executor.execute("SET counter hello");
+    assert.strictEqual(executor.execute("DECR counter"), "ERR value is not an integer or out of range");
+});
+
+test("DECR validates arguments", () => {
+    const executor = createExecutor();
+    assert.strictEqual(executor.execute("DECR"), "ERR wrong number of arguments for 'DECR' command");
+    assert.strictEqual(executor.execute("DECR key extra"), "ERR wrong number of arguments for 'DECR' command");
 });
