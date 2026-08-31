@@ -38,7 +38,8 @@ src/
 ├── database/
 │   └── database.js               # In-memory typed value store with expiration and TTL
 └── commands/
-    ├── command-executer.js       # Parses input and routes to handlers
+    ├── command-executer.js       # Routes parsed input to command handlers
+    ├── parser.js                 # Parses CLI input into command and args
     ├── set.js                    # SET command
     ├── get.js                    # GET command
     ├── del.js                    # DEL command
@@ -48,7 +49,8 @@ src/
     └── type.js                   # TYPE command
 tests/
 ├── database.test.js              # Database unit tests (node:test)
-└── commands.test.js              # CommandExecuter / CLI command tests
+├── commands.test.js              # CommandExecuter / CLI command tests
+└── parser.test.js                # CLI input parser tests
 ```
 
 ## Requirements

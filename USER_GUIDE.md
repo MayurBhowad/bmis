@@ -32,7 +32,7 @@ To leave the session, press `Ctrl+C` (or close the terminal). All stored keys ar
 ## How commands work
 
 - Commands are **case-insensitive** (`SET`, `set`, and `Set` are the same).
-- Arguments are separated by whitespace.
+- Arguments are separated by whitespace; extra spaces between arguments are ignored.
 - For `SET`, everything after the key is the value (spaces allowed), unless `EX seconds` is appended to set expiration in the same command.
 - `GET` takes **exactly one** argument (the key). Extra arguments are an error. Returns `null` for missing or expired keys.
 - `DEL` and `EXISTS` accept **one or more** keys and return a count.

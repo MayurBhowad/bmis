@@ -1,4 +1,4 @@
-
+const parse = require('./parser');
 const setCommand = require('./set');
 const getCommand = require('./get');
 const delCommand = require('./del');
@@ -22,25 +22,21 @@ class CommandExecuter {
     }
 
     execute(input) {
-        const trimmedInput = input.trim();
+        const parsed = parse(input);
 
-        // If the input is empty, return undefined
-        if (!trimmedInput) {
+        if(!parsed) {
             return undefined;
         }
 
-        const parts = input.trim().split(/\s+/);
-        const commandName = parts[0].toUpperCase();
-        const args = parts.slice(1);
+        const { command, args } = parsed;
 
-        const command = this.commands[commandName];
-
-        // Unknown command
-        if (!command) {
-            return `ERR unknown command '${commandName}'`;
+        const commandHandler = this.commands[command];
+        
+        if(!commandHandler) {
+            return `ERR unknown command '${command}'`;
         }
 
-        return command(this.database, args);
+        return commandHandler(this.database, args);
     }
 }
 
