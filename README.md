@@ -8,7 +8,7 @@ BMis starts as a minimal key-value engine and is evolving toward a networked dat
 
 ## Current status
 
-v0.5.0 — interactive CLI over an in-memory key-value store, with unit tests for the database, parser, and command executer. The database layer uses an injectable `Storage` backend (defaults to in-memory). Values are stored with type metadata (strings only for now) and can be inspected with `TYPE`. Integer strings can be incremented or decremented with `INCR` and `DECR`. Keys can expire via `EXPIRE`, `SET ... EX`, or remaining TTL can be queried with `TTL`; expired keys are removed lazily on `GET`, `TTL`, and `TYPE`, and `SET` clears expiration when overwriting a key.
+v0.5.0 — interactive CLI over an in-memory key-value store, with unit tests for the database, parser, and command executer. The database layer uses an injectable `Storage` backend (defaults to in-memory). Values are stored with type metadata — **strings** and **lists** are supported and can be inspected with `TYPE`. Integer strings can be incremented or decremented with `INCR` and `DECR`. Lists support `LPUSH`, `RPUSH`, `LPOP`, `RPOP`, and `LRANGE`. Keys can expire via `EXPIRE`, `SET ... EX`, or remaining TTL can be queried with `TTL`; expired keys are removed lazily on `GET`, `TTL`, and `TYPE`, and `SET` clears expiration when overwriting a key.
 
 | Command | Args | Description | Example |
 |---------|------|-------------|---------|
@@ -18,9 +18,14 @@ v0.5.0 — interactive CLI over an in-memory key-value store, with unit tests fo
 | `EXISTS` | key [key ...] | Count how many keys exist | `EXISTS name missing` → `1` |
 | `EXPIRE` | key, seconds | Set a key's time-to-live in seconds (`0` expires immediately) | `EXPIRE session 60` → `1` (or `0` if key missing) |
 | `TTL` | key | Get remaining TTL in seconds | `TTL session` → `60` (or `-1` / `-2`; see below) |
-| `TYPE` | key | Get the type of a key | `TYPE name` → `string` (or `none` if missing or expired) |
+| `TYPE` | key | Get the type of a key | `TYPE name` → `string` (or `list` / `none`) |
 | `INCR` | key | Increment an integer string value by 1 | `INCR counter` → `11` (creates key as `1` if missing) |
 | `DECR` | key | Decrement an integer string value by 1 | `DECR counter` → `9` (creates key as `-1` if missing) |
+| `LPUSH` | key, value [value ...] | Prepend one or more values to a list | `LPUSH fruits apple banana` → `2` |
+| `RPUSH` | key, value [value ...] | Append one or more values to a list | `RPUSH fruits apple banana` → `2` |
+| `LPOP` | key | Remove and return the first list element | `LPOP fruits` → `apple` (or `null` if missing) |
+| `RPOP` | key | Remove and return the last list element | `RPOP fruits` → `orange` (or `null` if missing) |
+| `LRANGE` | key, start, stop | Return a range of list elements (inclusive) | `LRANGE fruits 0 -1` → full list |
 
 Commands are case-insensitive. For `SET`, everything after the key is the value (spaces allowed), unless `EX seconds` is appended to set expiration in the same command.
 
@@ -32,6 +37,7 @@ Errors:
 - Invalid `INCR` / `DECR` value (non-integer) → `ERR value is not an integer or out of range`
 - Invalid `SET ... EX` syntax → `ERR syntax error`
 - Invalid `SET ... EX` seconds → `ERR invalid expire time in 'SET' command`
+- Wrong type for list operation → `WRONGTYPE Operation against a key holding the wrong kind of value`
 
 ## Project structure
 
@@ -53,7 +59,12 @@ src/
     ├── ttl.js                    # TTL command
     ├── type.js                   # TYPE command
     ├── incr.js                   # INCR command
-    └── decr.js                   # DECR command
+    ├── decr.js                   # DECR command
+    ├── lpush.js                  # LPUSH command
+    ├── rpush.js                  # RPUSH command
+    ├── lpop.js                   # LPOP command
+    ├── rpop.js                   # RPOP command
+    └── lrange.js                 # LRANGE command
 tests/
 ├── database.test.js              # Database unit tests (node:test)
 ├── commands.test.js              # CommandExecuter / CLI command tests
@@ -103,7 +114,7 @@ ERR wrong number of arguments for SET command
 
 Incremental versions toward:
 
-- Multiple native data structures (typed value storage in place; strings only)
+- Multiple native data structures (strings and lists supported; hashes pending)
 - Key expiration
 - TCP networking and client-server communication
 - RESP-compatible protocol

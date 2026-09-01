@@ -8,4 +8,10 @@ module.exports = {
     TYPE: require('./type'),
     INCR: require('./incr'),
     DECR: require('./decr'),
+
+    LPUSH: require('./lpush'),
+    RPUSH: require('./rpush'),
+    LPOP: require('./lpop'),
+    RPOP: require('./rpop'),
+    LRANGE: require('./lrange'),
 };

@@ -40,10 +40,13 @@ To leave the session, press `Ctrl+C` (or close the terminal). All stored keys ar
 - `TTL` takes **exactly one** argument (the key). Returns `-2` if the key is missing or expired, `-1` if the key has no expiration, or the remaining seconds otherwise.
 - `TYPE` takes **exactly one** argument (the key). Returns `string` for stored values, or `none` if the key is missing or expired.
 - `INCR` and `DECR` each take **exactly one** argument (the key). They operate on integer string values and return the new value as a number.
+- `LPUSH` and `RPUSH` take a key followed by **one or more** values and return the new list length.
+- `LPOP` and `RPOP` each take **exactly one** argument (the key) and return the removed value, or `null` if the list is missing.
+- `LRANGE` takes a key, a start index, and a stop index (both inclusive). Use `-1` as the stop index to read through the last element.
 - `SET` clears any existing expiration when overwriting a key. `INCR` and `DECR` also clear expiration when they update a key.
 - Blank lines produce no output; the prompt simply returns.
 - Data is **in-memory only** — nothing is written to disk.
-- All values are currently stored as **strings**.
+- Supported types are **strings** (via `SET`) and **lists** (via `LPUSH` / `RPUSH`).
 
 ## Commands
 
@@ -245,6 +248,7 @@ Returns the type of the value stored at `key`. Expired keys are removed when acc
 | Result | Meaning |
 |--------|---------|
 | `string` | Key holds a string value (set via `SET`) |
+| `list` | Key holds a list (created via `LPUSH` or `RPUSH`) |
 | `none` | Key does not exist, or has already expired |
 | `ERR wrong number of arguments for TYPE command` | Missing key, or more than one argument |
 
@@ -325,15 +329,144 @@ BMis> DECR
 ERR wrong number of arguments for 'DECR' command
 ```
 
+### LPUSH — prepend to a list
+
+**Syntax:** `LPUSH <key> <value> [value ...]`
+
+Prepends one or more values to the head of a list. Creates the list if it does not exist. Returns the list length after the push.
+
+| Result | Meaning |
+|--------|---------|
+| *(number)* | New list length |
+| `ERR wrong number of arguments for LPUSH command` | Missing key or value |
+| `WRONGTYPE Operation against a key holding the wrong kind of value` | Key exists but is not a list |
+
+**Examples:**
+
+```text
+BMis> LPUSH fruits apple banana
+2
+BMis> LRANGE fruits 0 -1
+banana,apple
+BMis> LPUSH fruits orange
+3
+BMis> LRANGE fruits 0 -1
+orange,banana,apple
+```
+
+### RPUSH — append to a list
+
+**Syntax:** `RPUSH <key> <value> [value ...]`
+
+Appends one or more values to the tail of a list. Creates the list if it does not exist. Returns the list length after the push.
+
+| Result | Meaning |
+|--------|---------|
+| *(number)* | New list length |
+| `ERR wrong number of arguments for RPUSH command` | Missing key or value |
+| `WRONGTYPE Operation against a key holding the wrong kind of value` | Key exists but is not a list |
+
+**Examples:**
+
+```text
+BMis> RPUSH fruits apple banana
+2
+BMis> LRANGE fruits 0 -1
+apple,banana
+BMis> RPUSH fruits orange
+3
+BMis> LRANGE fruits 0 -1
+apple,banana,orange
+```
+
+### LPOP — remove the first list element
+
+**Syntax:** `LPOP <key>`
+
+Removes and returns the first element of the list.
+
+| Result | Meaning |
+|--------|---------|
+| *(value)* | The removed element |
+| `null` | List does not exist |
+| `ERR wrong number of arguments for LPOP command` | Missing key |
+| `WRONGTYPE Operation against a key holding the wrong kind of value` | Key exists but is not a list |
+
+**Examples:**
+
+```text
+BMis> RPUSH fruits apple banana orange
+3
+BMis> LPOP fruits
+apple
+BMis> LRANGE fruits 0 -1
+banana,orange
+BMis> LPOP missing
+null
+```
+
+### RPOP — remove the last list element
+
+**Syntax:** `RPOP <key>`
+
+Removes and returns the last element of the list.
+
+| Result | Meaning |
+|--------|---------|
+| *(value)* | The removed element |
+| `null` | List does not exist |
+| `ERR wrong number of arguments for RPOP command` | Missing key |
+| `WRONGTYPE Operation against a key holding the wrong kind of value` | Key exists but is not a list |
+
+**Examples:**
+
+```text
+BMis> RPUSH fruits apple banana orange
+3
+BMis> RPOP fruits
+orange
+BMis> LRANGE fruits 0 -1
+apple,banana
+BMis> RPOP missing
+null
+```
+
+### LRANGE — read a range from a list
+
+**Syntax:** `LRANGE <key> <start> <stop>`
+
+Returns elements from `start` through `stop`, both inclusive. Negative indices count from the end of the list (`-1` is the last element). Returns an empty list for a missing key or an out-of-range request.
+
+| Result | Meaning |
+|--------|---------|
+| *(list)* | Elements in the requested range (printed comma-separated) |
+| `ERR wrong number of arguments for LRANGE command` | Missing key, start, or stop |
+| `ERR value is not an integer or out of range` | `start` or `stop` is not a valid integer |
+| `WRONGTYPE Operation against a key holding the wrong kind of value` | Key exists but is not a list |
+
+**Examples:**
+
+```text
+BMis> RPUSH fruits apple banana orange
+3
+BMis> LRANGE fruits 0 -1
+apple,banana,orange
+BMis> LRANGE fruits 0 1
+apple,banana
+BMis> LRANGE missing 0 -1
+
+```
+
 ## Errors
 
 | Message | Cause |
 |---------|--------|
 | `ERR unknown command '<COMMAND>'` | Command name is not recognized |
 | `ERR wrong number of arguments for <COMMAND> command` | Too few or too many arguments for that command |
-| `ERR value is not an integer or out of range` | `EXPIRE`, `INCR`, or `DECR` received a non-integer value |
+| `ERR value is not an integer or out of range` | `EXPIRE`, `INCR`, `DECR`, or `LRANGE` received a non-integer value |
 | `ERR syntax error` | `SET ... EX` is missing seconds or `EX` is not in the correct position |
 | `ERR invalid expire time in 'SET' command` | `SET ... EX` seconds argument is not a valid whole number |
+| `WRONGTYPE Operation against a key holding the wrong kind of value` | A list command was used on a non-list key |
 
 **Examples:**
 
@@ -359,6 +492,12 @@ BMis> SET session active EX 60
 OK
 BMis> TTL session
 60
+BMis> RPUSH fruits apple banana
+2
+BMis> TYPE fruits
+list
+BMis> LRANGE fruits 0 -1
+apple,banana
 BMis> GET name
 Mayur
 BMis> EXISTS name
@@ -375,7 +514,7 @@ BMis> EXISTS name
 
 - No persistence — restarting clears all data
 - No networking — local CLI only
-- No lists, hashes, or other data types yet (only strings are supported)
+- No hashes or other data types yet (strings and lists are supported)
 - No authentication or multi-user access
 
 See the [README](./README.md) for project status and roadmap.
