@@ -1,8 +1,8 @@
 const Storage = require('./storage');
 
 class Database {
-    constructor() {
-        this.storage = new Storage();
+    constructor(storage = new Storage()) {
+        this.storage = storage;
     }
 
     ttl(key) {

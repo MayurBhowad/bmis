@@ -1,6 +1,6 @@
 # BMis
 
-**Version:** v0.4.0
+**Version:** v0.5.0
 
 In-memory data platform.
 
@@ -8,7 +8,7 @@ BMis starts as a minimal key-value engine and is evolving toward a networked dat
 
 ## Current status
 
-v0.4.0 — interactive CLI over an in-memory key-value store, with unit tests for the database, parser, and command executer. Values are stored internally with type metadata (strings only for now) and can be inspected with `TYPE`. Integer strings can be incremented or decremented with `INCR` and `DECR`. Keys can expire via `EXPIRE`, `SET ... EX`, or remaining TTL can be queried with `TTL`; expired keys are removed lazily on `GET`, `TTL`, and `TYPE`, and `SET` clears expiration when overwriting a key.
+v0.5.0 — interactive CLI over an in-memory key-value store, with unit tests for the database, parser, and command executer. The database layer uses an injectable `Storage` backend (defaults to in-memory). Values are stored with type metadata (strings only for now) and can be inspected with `TYPE`. Integer strings can be incremented or decremented with `INCR` and `DECR`. Keys can expire via `EXPIRE`, `SET ... EX`, or remaining TTL can be queried with `TTL`; expired keys are removed lazily on `GET`, `TTL`, and `TYPE`, and `SET` clears expiration when overwriting a key.
 
 | Command | Args | Description | Example |
 |---------|------|-------------|---------|
@@ -39,7 +39,7 @@ Errors:
 src/
 ├── index.js                      # Interactive CLI entry point
 ├── database/
-│   ├── database.js               # Typed value store with expiration and TTL
+│   ├── database.js               # Typed value store with injectable Storage backend
 │   └── storage.js                # Low-level Map-backed storage layer
 └── commands/
     ├── command-executer.js       # Routes parsed input to command handlers
@@ -107,7 +107,7 @@ Incremental versions toward:
 - Key expiration
 - TCP networking and client-server communication
 - RESP-compatible protocol
-- Persistence
+- Persistence (injectable `Storage` layer in place)
 - Pub/Sub
 - Replication and distributed capabilities
 

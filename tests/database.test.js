@@ -97,3 +97,13 @@ test("database reports type of a key", () => {
     database.set('name', 'Mayur');
     assert.strictEqual(database.type('name'), 'string');
 });
+
+test("database uses injected storage", () => {
+    const storage = new Storage();
+    const database = new Database(storage);
+
+    database.set('name', 'Mayur');
+
+    assert.strictEqual(database.storage, storage);
+    assert.deepStrictEqual(storage.get('name'), { value: 'Mayur', type: 'string' });
+});
