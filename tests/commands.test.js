@@ -320,3 +320,127 @@ test("DECR validates arguments", () => {
     assert.strictEqual(executor.execute("DECR"), "ERR wrong number of arguments for 'DECR' command");
     assert.strictEqual(executor.execute("DECR key extra"), "ERR wrong number of arguments for 'DECR' command");
 });
+
+test("LPUSH creates a list and adds values", () => {
+    const executor = createExecutor();
+
+    const result = executor.execute("LPUSH fruits apple banana");
+
+    assert.strictEqual(result, 2);
+    assert.deepStrictEqual(
+        executor.execute("LRANGE fruits 0 -1"),
+        ["banana", "apple"]
+    );
+});
+
+test("LPUSH adds values to the beginning of an existing list", () => {
+    const executor = createExecutor();
+
+    executor.execute("LPUSH fruits apple banana");
+
+    const result = executor.execute("LPUSH fruits orange");
+
+    assert.strictEqual(result, 3);
+    assert.deepStrictEqual(
+        executor.execute("LRANGE fruits 0 -1"),
+        ["orange", "banana", "apple"]
+    );
+});
+
+test("RPUSH creates a list and adds values", () => {
+    const executor = createExecutor();
+
+    const result = executor.execute("RPUSH fruits apple banana");
+
+    assert.strictEqual(result, 2);
+    assert.deepStrictEqual(
+        executor.execute("LRANGE fruits 0 -1"),
+        ["apple", "banana"]
+    );
+});
+
+test("RPUSH adds values to the end of an existing list", () => {
+    const executor = createExecutor();
+
+    executor.execute("RPUSH fruits apple banana");
+
+    const result = executor.execute("RPUSH fruits orange");
+
+    assert.strictEqual(result, 3);
+    assert.deepStrictEqual(
+        executor.execute("LRANGE fruits 0 -1"),
+        ["apple", "banana", "orange"]
+    );
+});
+
+test("LPOP removes and returns the first value", () => {
+    const executor = createExecutor();
+
+    executor.execute("RPUSH fruits apple banana orange");
+
+    assert.strictEqual(
+        executor.execute("LPOP fruits"),
+        "apple"
+    );
+
+    assert.deepStrictEqual(
+        executor.execute("LRANGE fruits 0 -1"),
+        ["banana", "orange"]
+    );
+});
+
+test("RPOP removes and returns the last value", () => {
+    const executor = createExecutor();
+
+    executor.execute("RPUSH fruits apple banana orange");
+
+    assert.strictEqual(
+        executor.execute("RPOP fruits"),
+        "orange"
+    );
+
+    assert.deepStrictEqual(
+        executor.execute("LRANGE fruits 0 -1"),
+        ["apple", "banana"]
+    );
+});
+
+test("LPOP returns null for a missing list", () => {
+    const executor = createExecutor();
+
+    assert.strictEqual(
+        executor.execute("LPOP missing"),
+        null
+    );
+});
+
+test("RPOP returns null for a missing list", () => {
+    const executor = createExecutor();
+
+    assert.strictEqual(
+        executor.execute("RPOP missing"),
+        null
+    );
+});
+
+test("LRANGE returns the complete list", () => {
+    const executor = createExecutor();
+
+    executor.execute("RPUSH fruits apple banana orange");
+
+    assert.deepStrictEqual(
+        executor.execute("LRANGE fruits 0 -1"),
+        ["apple", "banana", "orange"]
+    );
+});
+
+test("LRANGE returns a range of list values", () => {
+    const executor = createExecutor();
+
+    executor.execute("RPUSH fruits apple banana orange");
+
+    assert.deepStrictEqual(
+        executor.execute("LRANGE fruits 0 1"),
+        ["apple", "banana"]
+    );
+});
