@@ -8,7 +8,7 @@ BMis starts as a minimal key-value engine and is evolving toward a networked dat
 
 ## Current status
 
-v0.5.0 — interactive CLI over an in-memory key-value store, with unit tests for the database, parser, and command executer. The database layer uses an injectable `Storage` backend (defaults to in-memory). Values are stored with type metadata — **strings** and **lists** are supported and can be inspected with `TYPE`. Integer strings can be incremented or decremented with `INCR` and `DECR`. Lists support `LPUSH`, `RPUSH`, `LPOP`, `RPOP`, `LRANGE`, and `LLEN`. Keys can expire via `EXPIRE`, `SET ... EX`, or remaining TTL can be queried with `TTL`; expired keys are removed lazily on `GET`, `TTL`, and `TYPE`, and `SET` clears expiration when overwriting a key.
+v0.5.0 — interactive CLI over an in-memory key-value store, with unit tests for the database, parser, and command executer. The database layer uses an injectable `Storage` backend (defaults to in-memory). Values are stored with type metadata — **strings** and **lists** are supported and can be inspected with `TYPE`. Integer strings can be incremented or decremented with `INCR` and `DECR`. Lists support `LPUSH`, `RPUSH`, `LPOP`, `RPOP`, `LRANGE`, `LLEN`, and `LINDEX`. Keys can expire via `EXPIRE`, `SET ... EX`, or remaining TTL can be queried with `TTL`; expired keys are removed lazily on `GET`, `TTL`, and `TYPE`, and `SET` clears expiration when overwriting a key.
 
 | Command | Args | Description | Example |
 |---------|------|-------------|---------|
@@ -27,6 +27,7 @@ v0.5.0 — interactive CLI over an in-memory key-value store, with unit tests fo
 | `RPOP` | key | Remove and return the last list element | `RPOP fruits` → `orange` (or `null` if missing) |
 | `LRANGE` | key, start, stop | Return a range of list elements (inclusive) | `LRANGE fruits 0 -1` → full list |
 | `LLEN` | key | Get the length of a list | `LLEN fruits` → `3` (or `0` if missing) |
+| `LINDEX` | key, index | Get a list element by index | `LINDEX fruits 0` → `apple` (or `null` if out of range) |
 
 Commands are case-insensitive. For `SET`, everything after the key is the value (spaces allowed), unless `EX seconds` is appended to set expiration in the same command.
 
@@ -66,7 +67,8 @@ src/
     ├── lpop.js                   # LPOP command
     ├── rpop.js                   # RPOP command
     ├── lrange.js                 # LRANGE command
-    └── llen.js                   # LLEN command
+    ├── llen.js                   # LLEN command
+    └── lindex.js                 # LINDEX command
 tests/
 ├── database.test.js              # Database unit tests (node:test)
 ├── commands.test.js              # CommandExecuter / CLI command tests
