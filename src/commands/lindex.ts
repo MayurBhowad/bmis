@@ -1,4 +1,7 @@
-function lindex(database, args) {
+import Database from '../database/database';
+import { CommandResult } from '../types';
+
+function lindex(database: Database, args: string[]): CommandResult {
     if(args.length !== 2) {
         return "ERR wrong number of arguments for 'LINDEX' command";
     }
@@ -33,4 +36,4 @@ function lindex(database, args) {
     return list[actualIndex];
 }
 
-module.exports = lindex;
+export default lindex;

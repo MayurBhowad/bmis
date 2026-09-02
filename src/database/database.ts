@@ -1,11 +1,13 @@
-const Storage = require('./storage');
+import Storage from './storage';
 
 class Database {
-    constructor(storage = new Storage()) {
+    storage: Storage;
+
+    constructor(storage: Storage = new Storage()) {
         this.storage = storage;
     }
 
-    ttl(key) {
+    ttl(key: string): number {
         if(!this.storage.has(key)) {
             return -2;
         }
@@ -21,13 +23,13 @@ class Database {
         return Math.ceil(remainingMilliseconds / 1000);
     }
 
-    set(key, value) {
+    set(key: string, value: string | string[], _type?: string): string {
         this.storage.set(key, { value, type: 'string' });
         this.storage.deleteExpiration(key);
         return "OK";
     }
 
-    get(key) {
+    get(key: string): string | string[] | null {
         if (!this.storage.has(key)) {
             return null;
         }
@@ -35,10 +37,10 @@ class Database {
             this.deleteKey(key);
             return null;
         }
-        return this.storage.get(key).value;
+        return this.storage.get(key)!.value;
     }
 
-    del(key) {
+    del(key: string): number {
         if(!this.storage.has(key)) {
             return 0;
         }
@@ -46,11 +48,11 @@ class Database {
         return 1;
     }
 
-    exists(key) {
+    exists(key: string): number {
         return this.storage.has(key) ? 1 : 0;
     }
 
-    expireAt(key, timestamp) {
+    expireAt(key: string, timestamp: number): number {
         if(!this.storage.has(key)) {
             return 0;
         }
@@ -59,7 +61,7 @@ class Database {
         return 1;
     }
 
-    isExpired(key) {
+    isExpired(key: string): boolean {
         const expiredAt = this.storage.getExpiration(key);
         if(expiredAt === undefined) {
             return false;
@@ -68,12 +70,12 @@ class Database {
         return Date.now() >= expiredAt;
     }
 
-    deleteKey(key) {
+    deleteKey(key: string): void {
         this.storage.delete(key);
         this.storage.deleteExpiration(key);
     }
 
-    type(key) {
+    type(key: string): string {
         if(!this.storage.has(key)) {
             return 'none';
         }
@@ -81,8 +83,8 @@ class Database {
             this.deleteKey(key);
             return 'none';
         }
-        return this.storage.get(key).type;
+        return this.storage.get(key)!.type;
     }
 }
 
-module.exports = Database;
+export default Database;

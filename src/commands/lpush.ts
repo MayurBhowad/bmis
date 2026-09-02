@@ -1,4 +1,7 @@
-function lpush(database, args) {
+import Database from '../database/database';
+import { CommandResult } from '../types';
+
+function lpush(database: Database, args: string[]): CommandResult {
     if (args.length < 2) {
         return 'ERR wrong number of arguments for LPUSH command';
     }
@@ -26,4 +29,4 @@ function lpush(database, args) {
     return list.length;
 }
 
-module.exports = lpush;
+export default lpush;

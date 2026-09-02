@@ -1,4 +1,6 @@
-function parse(input) {
+import { ParsedCommand } from '../types';
+
+function parse(input: string): ParsedCommand | undefined {
     const trimmedInput = input.trim();
 
     if(!trimmedInput) {
@@ -13,4 +15,4 @@ function parse(input) {
     };
 }
 
-module.exports = parse;
+export default parse;

@@ -1,10 +1,13 @@
-function execute(database, args) {
+import Database from '../database/database';
+import { CommandResult } from '../types';
+
+function execute(database: Database, args: string[]): CommandResult {
     if (args.length < 2) {
         return 'ERR wrong number of arguments for SET command';
     }
     const key = args[0];
-    let value;
-    let expireSeconds = null;
+    let value: string;
+    let expireSeconds: number | null = null;
 
     const exIndex = args.findIndex((arg, index) => index > 0 && arg.toUpperCase() === 'EX');
 
@@ -34,4 +37,4 @@ function execute(database, args) {
     return "OK";
 }
 
-module.exports = execute
+export default execute;

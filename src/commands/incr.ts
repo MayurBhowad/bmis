@@ -1,4 +1,7 @@
-function incr(database, args) {
+import Database from '../database/database';
+import { CommandResult } from '../types';
+
+function incr(database: Database, args: string[]): CommandResult {
     if(args.length !== 1) {
         return 'ERR wrong number of arguments for \'INCR\' command';
     }
@@ -11,7 +14,7 @@ function incr(database, args) {
         return 1;
     }
 
-    if(!/^-?\d+$/.test(value)) {
+    if(!/^-?\d+$/.test(value as string)) {
         return 'ERR value is not an integer or out of range';
     }
 
@@ -21,4 +24,4 @@ function incr(database, args) {
     return newValue;
 }
 
-module.exports = incr;
+export default incr;

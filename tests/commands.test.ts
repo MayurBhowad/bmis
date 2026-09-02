@@ -1,12 +1,12 @@
-const test = require('node:test');
-const assert = require('node:assert');
+import test from 'node:test';
+import assert from 'node:assert';
 
-const Database = require('../src/database/database');
-const CE = require('../src/commands/command-executer');
+import Database from '../src/database/database';
+import CommandExecuter from '../src/commands/command-executer';
 
 function createExecutor() {
     const db = new Database();
-    return new CE(db);
+    return new CommandExecuter(db);
 }
 
 test("Set command stores a value", () => {
@@ -203,8 +203,8 @@ test("TTL returns the remaining seconds for an expiring key", () => {
     executor.execute("SET session active");
     executor.execute("EXPIRE session 10");
     const result = executor.execute("TTL session");
-    assert.ok(result >= 9);
-    assert.ok(result <= 10);
+    assert.ok((result as number) >= 9);
+    assert.ok((result as number) <= 10);
 });
 
 test("TTL validates arguments", () => {
@@ -245,7 +245,7 @@ test("SET support EX option to set expiration", () => {
     const executor = createExecutor();
     assert.strictEqual(executor.execute("SET session active EX 10"), "OK");
     const ttl = executor.execute("TTL session");
-    assert.ok(ttl >= 1 && ttl <= 10);
+    assert.ok((ttl as number) >= 1 && (ttl as number) <= 10);
 });
 
 test("SET EX requires seconds", () => {

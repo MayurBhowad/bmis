@@ -1,8 +1,8 @@
-const test = require('node:test');
-const assert = require('node:assert');
+import test from 'node:test';
+import assert from 'node:assert';
 
-const Storage = require('../src/database/storage');
-const Database = require('../src/database/database');
+import Storage from '../src/database/storage';
+import Database from '../src/database/database';
 
 function createDatabase() {
     const storage = new Storage();

@@ -1,8 +1,11 @@
-function rpop(database, args) {
+import Database from '../database/database';
+import { CommandResult } from '../types';
+
+function lpop(database: Database, args: string[]): CommandResult {
     if (args.length < 1) {
-        return 'ERR wrong number of arguments for RPOP command';
+        return 'ERR wrong number of arguments for LPOP command';
     }
-    
+ 
     const key = args[0];
 
     let list = database.get(key);
@@ -15,11 +18,11 @@ function rpop(database, args) {
         return 'WRONGTYPE Operation against a key holding the wrong kind of value';
     }
 
-    const value = list.pop();
+    const value = list.shift();
 
     database.set(key, list, 'list');
 
     return value;
 }
 
-module.exports = rpop;
+export default lpop;
