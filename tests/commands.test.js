@@ -444,3 +444,27 @@ test("LRANGE returns a range of list values", () => {
         ["apple", "banana"]
     );
 });
+
+test("LLEN returns the length of a list", () => {
+    const executor = createExecutor();
+    executor.execute("LPUSH numbers 1 2 3");
+
+    assert.strictEqual(executor.execute("LLEN numbers"), 3);
+});
+
+test("LLEN returns 0 for a missing list", () => {
+    const executor = createExecutor();
+    assert.strictEqual(executor.execute("LLEN missing"), 0);
+});
+
+test("LLEN returns WRONGTYPE form string key", () => {
+    const executor = createExecutor();
+    executor.execute("SET name Mayur");
+    assert.equal(executor.execute("LLEN name"), "WRONGTYPE Operation against a key holding the wrong kind of value");
+});
+
+test("LLEN required exactly one argument", () => {
+    const executor = createExecutor();
+    assert.equal(executor.execute("LLEN"), "ERR wrong number of arguments for 'LLEN' command");
+    assert.equal(executor.execute("LLEN key extra"), "ERR wrong number of arguments for 'LLEN' command");
+});

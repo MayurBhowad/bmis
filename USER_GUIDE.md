@@ -43,6 +43,7 @@ To leave the session, press `Ctrl+C` (or close the terminal). All stored keys ar
 - `LPUSH` and `RPUSH` take a key followed by **one or more** values and return the new list length.
 - `LPOP` and `RPOP` each take **exactly one** argument (the key) and return the removed value, or `null` if the list is missing.
 - `LRANGE` takes a key, a start index, and a stop index (both inclusive). Use `-1` as the stop index to read through the last element.
+- `LLEN` takes **exactly one** argument (the key) and returns the list length, or `0` if the key is missing.
 - `SET` clears any existing expiration when overwriting a key. `INCR` and `DECR` also clear expiration when they update a key.
 - Blank lines produce no output; the prompt simply returns.
 - Data is **in-memory only** — nothing is written to disk.
@@ -457,6 +458,36 @@ BMis> LRANGE missing 0 -1
 
 ```
 
+### LLEN — get list length
+
+**Syntax:** `LLEN <key>`
+
+Returns the number of elements in the list at `key`.
+
+| Result | Meaning |
+|--------|---------|
+| *(number)* | List length |
+| `0` | Key does not exist |
+| `ERR wrong number of arguments for 'LLEN' command` | Missing key, or more than one argument |
+| `WRONGTYPE Operation against a key holding the wrong kind of value` | Key exists but is not a list |
+
+**Examples:**
+
+```text
+BMis> LPUSH numbers 1 2 3
+3
+BMis> LLEN numbers
+3
+BMis> LLEN missing
+0
+BMis> SET name Mayur
+OK
+BMis> LLEN name
+WRONGTYPE Operation against a key holding the wrong kind of value
+BMis> LLEN
+ERR wrong number of arguments for 'LLEN' command
+```
+
 ## Errors
 
 | Message | Cause |
@@ -496,6 +527,8 @@ BMis> RPUSH fruits apple banana
 2
 BMis> TYPE fruits
 list
+BMis> LLEN fruits
+2
 BMis> LRANGE fruits 0 -1
 apple,banana
 BMis> GET name
