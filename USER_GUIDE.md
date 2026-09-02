@@ -44,6 +44,7 @@ To leave the session, press `Ctrl+C` (or close the terminal). All stored keys ar
 - `LPOP` and `RPOP` each take **exactly one** argument (the key) and return the removed value, or `null` if the list is missing.
 - `LRANGE` takes a key, a start index, and a stop index (both inclusive). Use `-1` as the stop index to read through the last element.
 - `LLEN` takes **exactly one** argument (the key) and returns the list length, or `0` if the key is missing.
+- `LINDEX` takes a key and an index. Negative indices count from the end of the list. Returns `null` if the key or index is out of range.
 - `SET` clears any existing expiration when overwriting a key. `INCR` and `DECR` also clear expiration when they update a key.
 - Blank lines produce no output; the prompt simply returns.
 - Data is **in-memory only** — nothing is written to disk.
@@ -488,13 +489,48 @@ BMis> LLEN
 ERR wrong number of arguments for 'LLEN' command
 ```
 
+### LINDEX — get a list element by index
+
+**Syntax:** `LINDEX <key> <index>`
+
+Returns the element at `index` in the list. Indices are zero-based; negative indices count from the end (`-1` is the last element).
+
+| Result | Meaning |
+|--------|---------|
+| *(value)* | Element at the given index |
+| `null` | Key or index is out of range |
+| `ERR wrong number of arguments for 'LINDEX' command` | Missing key or index, or too many arguments |
+| `ERR value is not an integer or out of range` | Index is not a valid integer |
+| `WRONGTYPE Operation against a key holding the wrong kind of value` | Key exists but is not a list |
+
+**Examples:**
+
+```text
+BMis> RPUSH users Mayur John Rahul
+3
+BMis> LINDEX users 0
+Mayur
+BMis> LINDEX users -1
+Rahul
+BMis> LINDEX users 5
+null
+BMis> LINDEX missing 0
+null
+BMis> SET name Mayur
+OK
+BMis> LINDEX name 0
+WRONGTYPE Operation against a key holding the wrong kind of value
+BMis> LINDEX users abc
+ERR value is not an integer or out of range
+```
+
 ## Errors
 
 | Message | Cause |
 |---------|--------|
 | `ERR unknown command '<COMMAND>'` | Command name is not recognized |
 | `ERR wrong number of arguments for <COMMAND> command` | Too few or too many arguments for that command |
-| `ERR value is not an integer or out of range` | `EXPIRE`, `INCR`, `DECR`, or `LRANGE` received a non-integer value |
+| `ERR value is not an integer or out of range` | `EXPIRE`, `INCR`, `DECR`, `LRANGE`, or `LINDEX` received a non-integer value |
 | `ERR syntax error` | `SET ... EX` is missing seconds or `EX` is not in the correct position |
 | `ERR invalid expire time in 'SET' command` | `SET ... EX` seconds argument is not a valid whole number |
 | `WRONGTYPE Operation against a key holding the wrong kind of value` | A list command was used on a non-list key |

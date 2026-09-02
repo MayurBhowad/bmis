@@ -15,4 +15,5 @@ module.exports = {
     RPOP: require('./rpop'),
     LRANGE: require('./lrange'),
     LLEN: require('./llen'),
+    LINDEX: require('./lindex'),
 };

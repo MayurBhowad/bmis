@@ -468,3 +468,48 @@ test("LLEN required exactly one argument", () => {
     assert.equal(executor.execute("LLEN"), "ERR wrong number of arguments for 'LLEN' command");
     assert.equal(executor.execute("LLEN key extra"), "ERR wrong number of arguments for 'LLEN' command");
 });
+
+test("LINDEX returns the value at the given index", () => {
+    const executor = createExecutor();
+    executor.execute("RPUSH users Mayur John")
+    assert.equal(executor.execute("LINDEX users 0"), "Mayur");
+    assert.equal(executor.execute("LINDEX users 1"), "John");
+});
+
+test("LINDEX supports negative indexes", () => {
+    const executor = createExecutor();
+    executor.execute("RPUSH users Mayur John Rahul")
+    assert.equal(executor.execute("LINDEX users -1"), "Rahul");
+    assert.equal(executor.execute("LINDEX users -2"), "John");
+});
+
+test("LINDEX returns null for an out of range index", () => {
+    const executor = createExecutor();
+    executor.execute("RPUSH users Mayur John")
+    assert.equal(executor.execute("LINDEX users 2"), null);
+    assert.equal(executor.execute("LINDEX users -3"), null);
+});
+
+test("LINDEX returns null for a missing list", () => {
+    const executor = createExecutor();
+    assert.equal(executor.execute("LINDEX missing 0"), null);
+});
+
+test("LINDEX return WRONGTYPE for a string key", () => {
+    const executor = createExecutor();
+    executor.execute("SET name Mayur");
+    assert.equal(executor.execute("LINDEX name 0"), "WRONGTYPE Operation against a key holding the wrong kind of value");
+});
+
+test("LINDEX validates arguments", () => {
+    const executor = createExecutor();
+    assert.equal(executor.execute("LINDEX"), "ERR wrong number of arguments for 'LINDEX' command");
+    assert.equal(executor.execute("LINDEX users"), "ERR wrong number of arguments for 'LINDEX' command");
+    assert.equal(executor.execute("LINDEX users 0 extra"), "ERR wrong number of arguments for 'LINDEX' command");
+});
+
+test("LINDEX rejects non-integer indexes", () => {
+    const executor = createExecutor();
+    executor.execute("RPUSH users Mayur John")
+    assert.equal(executor.execute("LINDEX users abc"), "ERR value is not an integer or out of range");
+});
