@@ -1,6 +1,6 @@
-const test = require('node:test');
-const assert = require('node:assert');
-const parse = require('../src/commands/parser');
+import test from 'node:test';
+import assert from 'node:assert';
+import parse from '../src/commands/parser';
 
 test("parser extracts command and arguments", () => {
     const result = parse("SET name Mayur");

@@ -1,12 +1,16 @@
-const parse = require('./parser');
-const commands = require('./commands');
+import parse from './parser';
+import commands from './commands';
+import Database from '../database/database';
+import { CommandResult } from '../types';
 
 class CommandExecuter {
-    constructor(database) {
+    database: Database;
+
+    constructor(database: Database) {
         this.database = database;
     }
 
-    execute(input) {
+    execute(input: string): CommandResult {
         const parsed = parse(input);
 
         if(!parsed) {
@@ -25,4 +29,4 @@ class CommandExecuter {
     }
 }
 
-module.exports = CommandExecuter;
+export default CommandExecuter;

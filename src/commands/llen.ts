@@ -1,4 +1,7 @@
-function llen(database, args) {
+import Database from '../database/database';
+import { CommandResult } from '../types';
+
+function llen(database: Database, args: string[]): CommandResult {
     if(args.length !== 1) {
         return "ERR wrong number of arguments for 'LLEN' command";
     }
@@ -17,4 +20,4 @@ function llen(database, args) {
     return list.length;
 }
 
-module.exports = llen;
+export default llen;

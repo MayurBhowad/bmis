@@ -1,4 +1,7 @@
-function lrange(database, args) {
+import Database from '../database/database';
+import { CommandResult } from '../types';
+
+function lrange(database: Database, args: string[]): CommandResult {
     if (args.length < 3) {
         return 'ERR wrong number of arguments for LRANGE command';
     }
@@ -42,4 +45,4 @@ function lrange(database, args) {
     return list.slice(normalizedStart, normalizedStop + 1);
 }
 
-module.exports = lrange;
+export default lrange;
