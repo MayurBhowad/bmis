@@ -8,7 +8,7 @@ BMis starts as a minimal key-value engine and is evolving toward a networked dat
 
 ## Current status
 
-v0.5.0 — interactive CLI over an in-memory key-value store, with unit tests for the database, parser, and command executer. The database layer uses an injectable `Storage` backend (defaults to in-memory). Values are stored with type metadata — **strings** and **lists** are supported and can be inspected with `TYPE`. Integer strings can be incremented or decremented with `INCR` and `DECR`. Lists support `LPUSH`, `RPUSH`, `LPOP`, `RPOP`, `LRANGE`, `LLEN`, and `LINDEX`. Keys can expire via `EXPIRE`, `SET ... EX`, or remaining TTL can be queried with `TTL`; expired keys are removed lazily on `GET`, `TTL`, and `TYPE`, and `SET` clears expiration when overwriting a key.
+v0.5.0 — TypeScript interactive CLI over an in-memory key-value store, with unit tests for the database, parser, and command executer. The database layer uses an injectable `Storage` backend (defaults to in-memory). Values are stored with type metadata — **strings** and **lists** are supported and can be inspected with `TYPE`. Integer strings can be incremented or decremented with `INCR` and `DECR`. Lists support `LPUSH`, `RPUSH`, `LPOP`, `RPOP`, `LRANGE`, `LLEN`, `LINDEX`, and `LSET`. Keys can expire via `EXPIRE`, `SET ... EX`, or remaining TTL can be queried with `TTL`; expired keys are removed lazily on `GET`, `TTL`, and `TYPE`, and `SET` clears expiration when overwriting a key.
 
 | Command | Args | Description | Example |
 |---------|------|-------------|---------|
@@ -28,6 +28,7 @@ v0.5.0 — interactive CLI over an in-memory key-value store, with unit tests fo
 | `LRANGE` | key, start, stop | Return a range of list elements (inclusive) | `LRANGE fruits 0 -1` → full list |
 | `LLEN` | key | Get the length of a list | `LLEN fruits` → `3` (or `0` if missing) |
 | `LINDEX` | key, index | Get a list element by index | `LINDEX fruits 0` → `apple` (or `null` if out of range) |
+| `LSET` | key, index, value | Set a list element at index | `LSET fruits 1 mango` → `OK` |
 
 Commands are case-insensitive. For `SET`, everything after the key is the value (spaces allowed), unless `EX seconds` is appended to set expiration in the same command.
 
@@ -40,52 +41,61 @@ Errors:
 - Invalid `SET ... EX` syntax → `ERR syntax error`
 - Invalid `SET ... EX` seconds → `ERR invalid expire time in 'SET' command`
 - Wrong type for list operation → `WRONGTYPE Operation against a key holding the wrong kind of value`
+- Missing list for `LSET` → `ERR no such key`
+- Out-of-range index for `LSET` → `ERR index out of range`
 
 ## Project structure
 
 ```text
 src/
-├── index.js                      # Interactive CLI entry point
+├── index.ts                      # Interactive CLI entry point
+├── types.ts                      # Shared TypeScript types
 ├── database/
-│   ├── database.js               # Typed value store with injectable Storage backend
-│   └── storage.js                # Low-level Map-backed storage layer
+│   ├── database.ts               # Typed value store with injectable Storage backend
+│   └── storage.ts                # Low-level Map-backed storage layer
 └── commands/
-    ├── command-executer.js       # Routes parsed input to command handlers
-    ├── parser.js                 # Parses CLI input into command and args
-    ├── commands.js               # Command registry
-    ├── set.js                    # SET command
-    ├── get.js                    # GET command
-    ├── del.js                    # DEL command
-    ├── exists.js                 # EXISTS command
-    ├── expire.js                 # EXPIRE command
-    ├── ttl.js                    # TTL command
-    ├── type.js                   # TYPE command
-    ├── incr.js                   # INCR command
-    ├── decr.js                   # DECR command
-    ├── lpush.js                  # LPUSH command
-    ├── rpush.js                  # RPUSH command
-    ├── lpop.js                   # LPOP command
-    ├── rpop.js                   # RPOP command
-    ├── lrange.js                 # LRANGE command
-    ├── llen.js                   # LLEN command
-    └── lindex.js                 # LINDEX command
+    ├── command-executer.ts       # Routes parsed input to command handlers
+    ├── parser.ts                 # Parses CLI input into command and args
+    ├── commands.ts               # Command registry
+    ├── set.ts                    # SET command
+    ├── get.ts                    # GET command
+    ├── del.ts                    # DEL command
+    ├── exists.ts                 # EXISTS command
+    ├── expire.ts                 # EXPIRE command
+    ├── ttl.ts                    # TTL command
+    ├── type.ts                   # TYPE command
+    ├── incr.ts                   # INCR command
+    ├── decr.ts                   # DECR command
+    ├── lpush.ts                  # LPUSH command
+    ├── rpush.ts                  # RPUSH command
+    ├── lpop.ts                   # LPOP command
+    ├── rpop.ts                   # RPOP command
+    ├── lrange.ts                 # LRANGE command
+    ├── llen.ts                   # LLEN command
+    ├── lindex.ts                 # LINDEX command
+    └── lset.ts                   # LSET command
 tests/
-├── database.test.js              # Database unit tests (node:test)
-├── commands.test.js              # CommandExecuter / CLI command tests
-└── parser.test.js                # CLI input parser tests
+├── database.test.ts              # Database unit tests (node:test)
+├── commands.test.ts              # CommandExecuter / CLI command tests
+└── parser.test.ts                # CLI input parser tests
 ```
 
 ## Requirements
 
 - [Node.js](https://nodejs.org/) (LTS recommended)
+- TypeScript (installed via `npm install`; used as a dev dependency)
 
-No external npm dependencies yet. Tests use the built-in `node:test` runner.
+Tests use the built-in `node:test` runner against the compiled `dist/` output.
 
 ## Run
 
 ```bash
-node src/index.js
+npm install
+npm run build
+npm start
 ```
+
+`npm start` runs the compiled CLI (`node dist/src/index.js`). `npm test` builds first, then runs tests from `dist/`.
 
 ## Test
 

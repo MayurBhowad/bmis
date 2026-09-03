@@ -7,15 +7,19 @@ BMis is an interactive command-line key-value store. You type commands at the `B
 ## Requirements
 
 - [Node.js](https://nodejs.org/) (LTS recommended)
-- No npm packages required
+- Project dependencies via `npm install` (TypeScript is a dev dependency)
 
 ## Starting the CLI
 
 From the project root:
 
 ```bash
-node src/index.js
+npm install
+npm run build
+npm start
 ```
+
+`npm start` runs the compiled CLI (`node dist/src/index.js`).
 
 You should see:
 
@@ -38,13 +42,14 @@ To leave the session, press `Ctrl+C` (or close the terminal). All stored keys ar
 - `DEL` and `EXISTS` accept **one or more** keys and return a count.
 - `EXPIRE` takes **exactly two** arguments: a key and a TTL in seconds.
 - `TTL` takes **exactly one** argument (the key). Returns `-2` if the key is missing or expired, `-1` if the key has no expiration, or the remaining seconds otherwise.
-- `TYPE` takes **exactly one** argument (the key). Returns `string` for stored values, or `none` if the key is missing or expired.
+- `TYPE` takes **exactly one** argument (the key). Returns `string` or `list` for stored values, or `none` if the key is missing or expired.
 - `INCR` and `DECR` each take **exactly one** argument (the key). They operate on integer string values and return the new value as a number.
 - `LPUSH` and `RPUSH` take a key followed by **one or more** values and return the new list length.
 - `LPOP` and `RPOP` each take **exactly one** argument (the key) and return the removed value, or `null` if the list is missing.
 - `LRANGE` takes a key, a start index, and a stop index (both inclusive). Use `-1` as the stop index to read through the last element.
 - `LLEN` takes **exactly one** argument (the key) and returns the list length, or `0` if the key is missing.
 - `LINDEX` takes a key and an index. Negative indices count from the end of the list. Returns `null` if the key or index is out of range.
+- `LSET` takes a key, an index, and a value. It updates the element at that index and returns `OK`.
 - `SET` clears any existing expiration when overwriting a key. `INCR` and `DECR` also clear expiration when they update a key.
 - Blank lines produce no output; the prompt simply returns.
 - Data is **in-memory only** — nothing is written to disk.
@@ -524,15 +529,57 @@ BMis> LINDEX users abc
 ERR value is not an integer or out of range
 ```
 
+### LSET — set a list element by index
+
+**Syntax:** `LSET <key> <index> <value>`
+
+Sets the list element at `index` to `value`. Indices are zero-based; negative indices count from the end (`-1` is the last element). The key must already exist and hold a list.
+
+| Result | Meaning |
+|--------|---------|
+| `OK` | Element was updated |
+| `ERR wrong number of arguments for 'LSET' command` | Missing key, index, or value, or too many arguments |
+| `ERR value is not an integer or out of range` | Index is not a valid integer |
+| `ERR no such key` | Key does not exist |
+| `ERR index out of range` | Index is outside the list bounds |
+| `WRONGTYPE Operation against a key holding the wrong kind of value` | Key exists but is not a list |
+
+**Examples:**
+
+```text
+BMis> RPUSH users Mayur John Rahul
+3
+BMis> LSET users 1 Amit
+OK
+BMis> LRANGE users 0 -1
+Mayur,Amit,Rahul
+BMis> LSET users -1 Akshay
+OK
+BMis> LINDEX users -1
+Akshay
+BMis> LSET missing 0 Mayur
+ERR no such key
+BMis> LSET users 5 Rahul
+ERR index out of range
+BMis> SET name Mayur
+OK
+BMis> LSET name 0 Rahul
+WRONGTYPE Operation against a key holding the wrong kind of value
+BMis> LSET users abc Rahul
+ERR value is not an integer or out of range
+```
+
 ## Errors
 
 | Message | Cause |
 |---------|--------|
 | `ERR unknown command '<COMMAND>'` | Command name is not recognized |
 | `ERR wrong number of arguments for <COMMAND> command` | Too few or too many arguments for that command |
-| `ERR value is not an integer or out of range` | `EXPIRE`, `INCR`, `DECR`, `LRANGE`, or `LINDEX` received a non-integer value |
+| `ERR value is not an integer or out of range` | `EXPIRE`, `INCR`, `DECR`, `LRANGE`, `LINDEX`, or `LSET` received a non-integer value |
 | `ERR syntax error` | `SET ... EX` is missing seconds or `EX` is not in the correct position |
 | `ERR invalid expire time in 'SET' command` | `SET ... EX` seconds argument is not a valid whole number |
+| `ERR no such key` | `LSET` was called on a missing key |
+| `ERR index out of range` | `LSET` index is outside the list bounds |
 | `WRONGTYPE Operation against a key holding the wrong kind of value` | A list command was used on a non-list key |
 
 **Examples:**
@@ -565,8 +612,10 @@ BMis> TYPE fruits
 list
 BMis> LLEN fruits
 2
+BMis> LSET fruits 1 mango
+OK
 BMis> LRANGE fruits 0 -1
-apple,banana
+apple,mango
 BMis> GET name
 Mayur
 BMis> EXISTS name

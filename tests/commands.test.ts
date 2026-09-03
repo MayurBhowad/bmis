@@ -513,3 +513,75 @@ test("LINDEX rejects non-integer indexes", () => {
     executor.execute("RPUSH users Mayur John")
     assert.equal(executor.execute("LINDEX users abc"), "ERR value is not an integer or out of range");
 });
+
+test('LSET updates a value at the given index', () => {
+    const executor = createExecutor();
+
+    executor.execute("RPUSH users Mayur John Rahul");
+    const result = executor.execute("LSET users 1 Amit");
+
+    assert.strictEqual(result, "OK");
+
+    assert.deepStrictEqual(executor.execute("LRANGE users 0 -1"), ["Mayur", "Amit", "Rahul"]);
+});
+
+test("LSET supports negative indexes", () => {
+    const executor = createExecutor();
+    executor.execute("RPUSH users Mayur John Rahul");
+    const result = executor.execute("LSET users -1 Akshay");
+
+    assert.strictEqual(result, "OK");
+
+    assert.deepStrictEqual(executor.execute("LRANGE users 0 -1"), ["Mayur", "John", "Akshay"]);
+});
+
+test("LSET returns error for a missing list", () => {
+    const executor = createExecutor();
+    const result = executor.execute("LSET missing 0 Mayur");
+    assert.strictEqual(result, "ERR no such key");
+});
+
+test("LSET rejects an out of range index", () => {
+    const executor = createExecutor();
+    executor.execute("RPUSH users Mayur John");
+    const result = executor.execute("LSET users 5 Rahul");
+
+    assert.strictEqual(result, "ERR index out of range");
+});
+
+test("LSET rejects a negative index out of range", () => {
+    const executor = createExecutor();
+    executor.execute("RPUSH users Mayur John");
+    const result = executor.execute("LSET users -5 Rahul");
+
+    assert.strictEqual(result, "ERR index out of range");
+});
+
+test("LSET rejects a non-integer index", () => {
+    const executor = createExecutor();
+    executor.execute("RPUSH users Mayur John");
+    const result = executor.execute("LSET users abc Rahul");
+    assert.strictEqual(result, "ERR value is not an integer or out of range");
+});
+
+test("LSET rejects a decimal index", () => {
+    const executor = createExecutor();
+    executor.execute("RPUSH users Mayur John");
+    const result = executor.execute("LSET users 1.5 Rahul");
+    assert.strictEqual(result, "ERR value is not an integer or out of range");
+});
+
+test("LSET return WRONGTYPE for a string key", () => {
+    const executor = createExecutor();
+    executor.execute("SET name Mayur");
+    const result = executor.execute("LSET name 0 Rahul");
+
+    assert.strictEqual(result, "WRONGTYPE Operation against a key holding the wrong kind of value");
+});
+
+test("LSET validates arguments", () => {
+    const executor = createExecutor();
+    assert.strictEqual(executor.execute("LSET"), "ERR wrong number of arguments for 'LSET' command");
+    assert.strictEqual(executor.execute("LSET users"), "ERR wrong number of arguments for 'LSET' command");
+    assert.strictEqual(executor.execute("LSET users 0"), "ERR wrong number of arguments for 'LSET' command");
+});
