@@ -585,3 +585,88 @@ test("LSET validates arguments", () => {
     assert.strictEqual(executor.execute("LSET users"), "ERR wrong number of arguments for 'LSET' command");
     assert.strictEqual(executor.execute("LSET users 0"), "ERR wrong number of arguments for 'LSET' command");
 });
+
+test("LTRIM keeps the requested range", () => {
+    const executor = createExecutor();
+    executor.execute("RPUSH fruits apple banana orange");
+    const result = executor.execute("LTRIM fruits 1 2");
+    assert.strictEqual(result, "OK");
+    assert.deepStrictEqual(executor.execute("LRANGE fruits 0 -1"), ["banana", "orange"]);
+});
+
+test("LTRIM supports negative indexes", () => {
+    const executor = createExecutor();
+    executor.execute("RPUSH names Mayur John Rahul Akshay");
+    const result = executor.execute("LTRIM names -3 -1");
+    assert.strictEqual(result, "OK");
+    assert.deepStrictEqual(executor.execute("LRANGE names 0 -1"), ["John", "Rahul", "Akshay"]);
+});
+
+test("LTRIM handles stop index beyond the list length", () => {
+    const executor = createExecutor();
+    executor.execute("RPUSH fruits apple banana orange");
+    const result = executor.execute("LTRIM fruits 1 100");
+
+    assert.strictEqual(result, "OK");
+    assert.deepStrictEqual(executor.execute("LRANGE fruits 0 -1"), ["banana", "orange"]);
+});
+
+test("LTRIM handles start index below zero", () => {
+    const executor = createExecutor();
+    executor.execute("RPUSH users Mayur John Rahul");
+    const result = executor.execute("LTRIM users -100 1");
+    assert.strictEqual(result, "OK");
+    assert.deepStrictEqual(executor.execute("LRANGE users 0 -1"), ["Mayur", "John"]);
+});
+
+test("LTRIM removes list when start is greater than stop", () => {
+    const executor = createExecutor();
+    executor.execute("RPUSH fruits apple banana orange");
+    const result = executor.execute("LTRIM fruits 2 1");
+
+    assert.strictEqual(result, "OK");
+    assert.strictEqual(executor.execute("LLEN fruits"), 0);
+});
+
+test("LTRIM removes the list when range is completely out of bounds", () => {
+    const executor = createExecutor();
+    executor.execute("RPUSH fruits apple banana orange");
+    const result = executor.execute("LTRIM fruits 100 100");
+
+    assert.strictEqual(result, "OK");
+    assert.strictEqual(executor.execute("LLEN fruits"), 0);
+});
+
+test("LTRIM returns ok for a missing key", () => {
+    const executor = createExecutor();
+    const result = executor.execute("LTRIM missing 0 1");
+    assert.strictEqual(result, "OK");
+});
+
+test("LTRIM returns WRONGTYPE for a string key", () => {
+    const executor = createExecutor();
+    executor.execute("SET name Mayur");
+    const result = executor.execute("LTRIM name 0 1");
+    assert.strictEqual(result, "WRONGTYPE Operation against a key holding the wrong kind of value");
+});
+
+test("LTRIM rejects non-integer indexes", () => {
+    const executor = createExecutor();
+    executor.execute("RPUSH users Mayur John");
+    const result = executor.execute("LTRIM users abc 1");
+    assert.strictEqual(result, "ERR value is not an integer or out of range");
+});
+
+test("LTRIM rejects decimal indexes", () => {
+    const executor = createExecutor();
+    executor.execute("RPUSH users Mayur John");
+    const result = executor.execute("LTRIM users 1.5 2");
+    assert.strictEqual(result, "ERR value is not an integer or out of range");
+});
+
+test("LTRIM validates arguments", () => {
+    const executor = createExecutor();
+    assert.strictEqual(executor.execute("LTRIM"), "ERR wrong number of arguments for LTRIM command");
+    assert.strictEqual(executor.execute("LTRIM users"), "ERR wrong number of arguments for LTRIM command");
+    assert.strictEqual(executor.execute("LTRIM users 0"), "ERR wrong number of arguments for LTRIM command");
+});
