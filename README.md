@@ -8,7 +8,7 @@ BMis starts as a minimal key-value engine and is evolving toward a networked dat
 
 ## Current status
 
-v0.5.0 — TypeScript interactive CLI over an in-memory key-value store, with unit tests for the database, parser, and command executer. The database layer uses an injectable `Storage` backend (defaults to in-memory). Values are stored with type metadata — **strings** and **lists** are supported and can be inspected with `TYPE`. Integer strings can be incremented or decremented with `INCR` and `DECR`. Lists support `LPUSH`, `RPUSH`, `LPOP`, `RPOP`, `LRANGE`, `LLEN`, `LINDEX`, and `LSET`. Keys can expire via `EXPIRE`, `SET ... EX`, or remaining TTL can be queried with `TTL`; expired keys are removed lazily on `GET`, `TTL`, and `TYPE`, and `SET` clears expiration when overwriting a key.
+v0.5.0 — TypeScript interactive CLI over an in-memory key-value store, with unit tests for the database, parser, and command executer. The database layer uses an injectable `Storage` backend (defaults to in-memory). Values are stored with type metadata — **strings** and **lists** are supported and can be inspected with `TYPE`. Integer strings can be incremented or decremented with `INCR` and `DECR`. Lists support `LPUSH`, `RPUSH`, `LPOP`, `RPOP`, `LRANGE`, `LLEN`, `LINDEX`, `LSET`, and `LTRIM`. Keys can expire via `EXPIRE`, `SET ... EX`, or remaining TTL can be queried with `TTL`; expired keys are removed lazily on `GET`, `TTL`, and `TYPE`, and `SET` clears expiration when overwriting a key.
 
 | Command | Args | Description | Example |
 |---------|------|-------------|---------|
@@ -29,6 +29,7 @@ v0.5.0 — TypeScript interactive CLI over an in-memory key-value store, with un
 | `LLEN` | key | Get the length of a list | `LLEN fruits` → `3` (or `0` if missing) |
 | `LINDEX` | key, index | Get a list element by index | `LINDEX fruits 0` → `apple` (or `null` if out of range) |
 | `LSET` | key, index, value | Set a list element at index | `LSET fruits 1 mango` → `OK` |
+| `LTRIM` | key, start, stop | Trim a list to the given inclusive range | `LTRIM fruits 1 2` → `OK` |
 
 Commands are case-insensitive. For `SET`, everything after the key is the value (spaces allowed), unless `EX seconds` is appended to set expiration in the same command.
 
@@ -73,7 +74,8 @@ src/
     ├── lrange.ts                 # LRANGE command
     ├── llen.ts                   # LLEN command
     ├── lindex.ts                 # LINDEX command
-    └── lset.ts                   # LSET command
+    ├── lset.ts                   # LSET command
+    └── ltrim.ts                  # LTRIM command
 tests/
 ├── database.test.ts              # Database unit tests (node:test)
 ├── commands.test.ts              # CommandExecuter / CLI command tests

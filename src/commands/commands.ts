@@ -16,6 +16,7 @@ import llen from './llen';
 import lindex from './lindex';
 import { CommandHandler } from '../types';
 import lset from './lset';
+import ltrim from './ltrim';
 
 const commands: Record<string, CommandHandler> = {
     SET: set,
@@ -36,6 +37,7 @@ const commands: Record<string, CommandHandler> = {
     LLEN: llen,
     LINDEX: lindex,
     LSET: lset,
+    LTRIM: ltrim,
 };
 
 export default commands;

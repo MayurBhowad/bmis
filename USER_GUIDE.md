@@ -50,6 +50,7 @@ To leave the session, press `Ctrl+C` (or close the terminal). All stored keys ar
 - `LLEN` takes **exactly one** argument (the key) and returns the list length, or `0` if the key is missing.
 - `LINDEX` takes a key and an index. Negative indices count from the end of the list. Returns `null` if the key or index is out of range.
 - `LSET` takes a key, an index, and a value. It updates the element at that index and returns `OK`.
+- `LTRIM` takes a key, a start index, and a stop index (both inclusive). It keeps only that range and returns `OK`. An empty or out-of-bounds range deletes the key.
 - `SET` clears any existing expiration when overwriting a key. `INCR` and `DECR` also clear expiration when they update a key.
 - Blank lines produce no output; the prompt simply returns.
 - Data is **in-memory only** — nothing is written to disk.
@@ -569,13 +570,55 @@ BMis> LSET users abc Rahul
 ERR value is not an integer or out of range
 ```
 
+### LTRIM — trim a list to a range
+
+**Syntax:** `LTRIM <key> <start> <stop>`
+
+Keeps only the elements from `start` through `stop` (inclusive) and removes the rest. Indices are zero-based; negative indices count from the end (`-1` is the last element). Out-of-range bounds are clamped. If the resulting range is empty or invalid, the key is deleted. A missing key still returns `OK`.
+
+| Result | Meaning |
+|--------|---------|
+| `OK` | List was trimmed (or the key was missing / removed) |
+| `ERR wrong number of arguments for LTRIM command` | Missing key, start, or stop, or too many arguments |
+| `ERR value is not an integer or out of range` | `start` or `stop` is not a valid integer |
+| `WRONGTYPE Operation against a key holding the wrong kind of value` | Key exists but is not a list |
+
+**Examples:**
+
+```text
+BMis> RPUSH fruits apple banana orange
+3
+BMis> LTRIM fruits 1 2
+OK
+BMis> LRANGE fruits 0 -1
+banana,orange
+BMis> RPUSH names Mayur John Rahul Akshay
+4
+BMis> LTRIM names -3 -1
+OK
+BMis> LRANGE names 0 -1
+John,Rahul,Akshay
+BMis> RPUSH items a b c
+3
+BMis> LTRIM items 2 1
+OK
+BMis> LLEN items
+0
+BMis> LTRIM missing 0 1
+OK
+BMis> SET name Mayur
+OK
+BMis> LTRIM name 0 1
+WRONGTYPE Operation against a key holding the wrong kind of value
+```
+
 ## Errors
 
 | Message | Cause |
 |---------|--------|
 | `ERR unknown command '<COMMAND>'` | Command name is not recognized |
 | `ERR wrong number of arguments for <COMMAND> command` | Too few or too many arguments for that command |
-| `ERR value is not an integer or out of range` | `EXPIRE`, `INCR`, `DECR`, `LRANGE`, `LINDEX`, or `LSET` received a non-integer value |
+| `ERR value is not an integer or out of range` | `EXPIRE`, `INCR`, `DECR`, `LRANGE`, `LINDEX`, `LSET`, or `LTRIM` received a non-integer value |
 | `ERR syntax error` | `SET ... EX` is missing seconds or `EX` is not in the correct position |
 | `ERR invalid expire time in 'SET' command` | `SET ... EX` seconds argument is not a valid whole number |
 | `ERR no such key` | `LSET` was called on a missing key |
@@ -616,6 +659,12 @@ BMis> LSET fruits 1 mango
 OK
 BMis> LRANGE fruits 0 -1
 apple,mango
+BMis> RPUSH queue a b c d
+4
+BMis> LTRIM queue 1 2
+OK
+BMis> LRANGE queue 0 -1
+b,c
 BMis> GET name
 Mayur
 BMis> EXISTS name
