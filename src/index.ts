@@ -1,9 +1,13 @@
 import * as readline from 'readline';
 import Database from './database/database';
 import CommandExecuter from './commands/command-executer';
+import TcpServer from './server/tcp-server';
 
 const db = new Database();
 const CE = new CommandExecuter(db);
+
+const tcpServer = new TcpServer(CE);
+tcpServer.start();
 
 const rl = readline.createInterface({
     input: process.stdin,

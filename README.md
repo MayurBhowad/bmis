@@ -8,7 +8,7 @@ BMis starts as a minimal key-value engine and is evolving toward a networked dat
 
 ## Current status
 
-v0.5.0 — TypeScript interactive CLI over an in-memory key-value store, with unit tests for the database, parser, and command executer. The database layer uses an injectable `Storage` backend (defaults to in-memory). Values are stored with type metadata — **strings** and **lists** are supported and can be inspected with `TYPE`. Integer strings can be incremented or decremented with `INCR` and `DECR`. Lists support `LPUSH`, `RPUSH`, `LPOP`, `RPOP`, `LRANGE`, `LLEN`, `LINDEX`, `LSET`, and `LTRIM`. Keys can expire via `EXPIRE`, `SET ... EX`, or remaining TTL can be queried with `TTL`; expired keys are removed lazily on `GET`, `TTL`, and `TYPE`, and `SET` clears expiration when overwriting a key.
+v0.5.0 — TypeScript interactive CLI plus a TCP server over a shared in-memory key-value store, with unit tests for the database, parser, and command executer. On start, BMis listens on **`127.0.0.1:6379`** for line-oriented TCP clients while the local CLI remains available. The database layer uses an injectable `Storage` backend (defaults to in-memory). Values are stored with type metadata — **strings** and **lists** are supported and can be inspected with `TYPE`. Integer strings can be incremented or decremented with `INCR` and `DECR`. Lists support `LPUSH`, `RPUSH`, `LPOP`, `RPOP`, `LRANGE`, `LLEN`, `LINDEX`, `LSET`, and `LTRIM`. Keys can expire via `EXPIRE`, `SET ... EX`, or remaining TTL can be queried with `TTL`; expired keys are removed lazily on `GET`, `TTL`, and `TYPE`, and `SET` clears expiration when overwriting a key.
 
 | Command | Args | Description | Example |
 |---------|------|-------------|---------|
@@ -49,8 +49,10 @@ Errors:
 
 ```text
 src/
-├── index.ts                      # Interactive CLI entry point
+├── index.ts                      # CLI + TCP server entry point
 ├── types.ts                      # Shared TypeScript types
+├── server/
+│   └── tcp-server.ts             # Line-oriented TCP server (default 127.0.0.1:6379)
 ├── database/
 │   ├── database.ts               # Typed value store with injectable Storage backend
 │   └── storage.ts                # Low-level Map-backed storage layer
@@ -97,7 +99,7 @@ npm run build
 npm start
 ```
 
-`npm start` runs the compiled CLI (`node dist/src/index.js`). `npm test` builds first, then runs tests from `dist/`.
+`npm start` runs the compiled entry point (`node dist/src/index.js`). It starts the TCP server on `127.0.0.1:6379` and the interactive CLI. `npm test` builds first, then runs tests from `dist/`.
 
 ## Test
 
@@ -105,11 +107,12 @@ npm start
 npm test
 ```
 
-For a full walkthrough of commands, responses, and errors, see **[USER_GUIDE.md](./USER_GUIDE.md)**.
+For a full walkthrough of commands, TCP usage, responses, and errors, see **[USER_GUIDE.md](./USER_GUIDE.md)**.
 
-Starts an interactive session:
+Starts an interactive session (TCP is also listening):
 
 ```text
+BMis TCP server is running on 127.0.0.1:6379
 Welcome to BMis CLI
 Type commands like: SET name Mayur
 BMis> SET name Mayur
@@ -126,13 +129,15 @@ BMis> SET
 ERR wrong number of arguments for SET command
 ```
 
+Connect over TCP with any line-based client (for example `nc 127.0.0.1 6379`) and send the same commands, one per line.
+
 ## Roadmap (high level)
 
 Incremental versions toward:
 
 - Multiple native data structures (strings and lists supported; hashes pending)
 - Key expiration
-- TCP networking and client-server communication
+- TCP networking and client-server communication (line-oriented TCP on `127.0.0.1:6379` in place)
 - RESP-compatible protocol
 - Persistence (injectable `Storage` layer in place)
 - Pub/Sub
