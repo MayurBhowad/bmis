@@ -1,3 +1,4 @@
+import Protocol from './protocol';
 import * as net from 'net';
 import CommandExecuter from '../commands/command-executer';
 
@@ -6,11 +7,13 @@ class TcpServer {
     private commandExecuter: CommandExecuter;
     private host: string;
     private port: number;
+    private protocol: Protocol;
 
     constructor(commandExecuter: CommandExecuter, host: string = '127.0.0.1', port: number = 6379) {
         this.commandExecuter = commandExecuter;
         this.host = host;
         this.port = port;
+        this.protocol = new Protocol();
 
         this.server = net.createServer((socket: net.Socket) => {
             this.handleConnection(socket);
@@ -44,34 +47,40 @@ class TcpServer {
     private handleCommand(socket: net.Socket, input: string): void {
         const result = this.commandExecuter.execute(input);
 
-        if (result === undefined) {
+        const response = this.protocol.encode(result);
+
+        if (response === '') {
             return;
         }
 
-        socket.write(`${this.formatResult(result)}\n`);
+        socket.write(response);
     }
 
-    private formatResult(result: Exclude<ReturnType<CommandExecuter['execute']>, undefined>): string {
-        if(result === null) {
-            return '(nil)';
-        }
-
-        if(Array.isArray(result)) {
-            return result.join('\n');
-        }
-
-        return String(result);
-    }
-
-    start(): void {
-        this.server.listen(this.port, this.host, () => {
-            console.log(`BMis TCP server is running on ${this.host}:${this.port}`);
+    start(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            this.server.once('error', reject);
+    
+            this.server.listen(this.port, this.host, () => {
+                console.log(
+                    `BMIS TCP server listening on ${this.host}:${this.port}`
+                );
+    
+                resolve();
+            });
         });
     }
 
-    stop(): void {
-        this.server.close(() => {
-            console.log(`BMis TCP server is stopped`);
+    stop(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            this.server.close((error) => {
+                if (error) {
+                    reject(error);
+                    return;
+                }
+    
+                console.log('BMIS TCP server stopped');
+                resolve();
+            });
         });
     }
 }
