@@ -11,171 +11,340 @@ const PORT = 6380;
 
 let tcpServer: TcpServer;
 
-before(() => {
+function parseResponse(
+    buffer: string
+): { response: string; remaining: string } | undefined {
+
+    const lineEnd = buffer.indexOf("\r\n");
+
+    if (lineEnd === -1) {
+        return undefined;
+    }
+
+    const header = buffer.slice(0, lineEnd);
+
+    if (header === "+OK") {
+        return {
+            response: "+OK",
+            remaining: buffer.slice(lineEnd + 2),
+        };
+    }
+
+    if (header.startsWith(":")) {
+        return {
+            response: header,
+            remaining: buffer.slice(lineEnd + 2),
+        };
+    }
+
+    if (header.startsWith("-")) {
+        return {
+            response: header,
+            remaining: buffer.slice(lineEnd + 2),
+        };
+    }
+
+    if (header === "$-1") {
+        return {
+            response: null as unknown as string,
+            remaining: buffer.slice(lineEnd + 2),
+        };
+    }
+
+    if (header.startsWith("$")) {
+        const length = Number(header.slice(1));
+
+        const start = lineEnd + 2;
+        const end = start + length;
+
+        if (buffer.length < end + 2) {
+            return undefined;
+        }
+
+        return {
+            response: buffer.slice(start, end),
+            remaining: buffer.slice(end + 2),
+        };
+    }
+
+    return undefined;
+}
+
+
+class TestClient {
+
+    private socket: net.Socket;
+
+    private buffer = "";
+
+    private responses: string[] = [];
+
+    private waiters: Array<{
+        resolve: (value: string) => void;
+        reject: (error: Error) => void;
+    }> = [];
+
+    private constructor(socket: net.Socket) {
+        this.socket = socket;
+
+        this.socket.on("data", (data: Buffer) => {
+            this.buffer += data.toString();
+
+            this.processBuffer();
+        });
+    }
+
+    static connect(): Promise<TestClient> {
+        return new Promise((resolve, reject) => {
+
+            const socket = net.createConnection({
+                host: HOST,
+                port: PORT,
+            });
+
+            socket.once("connect", () => {
+                resolve(new TestClient(socket));
+            });
+
+            socket.once("error", reject);
+        });
+    }
+
+    private processBuffer(): void {
+
+        while (true) {
+
+            const parsed = parseResponse(this.buffer);
+
+            if (!parsed) {
+                return;
+            }
+
+            this.buffer = parsed.remaining;
+
+            if (this.waiters.length > 0) {
+
+                const waiter = this.waiters.shift()!;
+
+                waiter.resolve(parsed.response);
+
+            } else {
+
+                this.responses.push(parsed.response);
+            }
+        }
+    }
+
+    writeRaw(data: string): void {
+        this.socket.write(data);
+    }
+
+    send(command: string): Promise<string> {
+
+        this.socket.write(`${command}\n`);
+
+        if (this.responses.length > 0) {
+            return Promise.resolve(
+                this.responses.shift()!
+            );
+        }
+
+        return new Promise((resolve, reject) => {
+
+            this.waiters.push({
+                resolve,
+                reject,
+            });
+
+        });
+    }
+
+    close(): Promise<void> {
+
+        return new Promise((resolve) => {
+
+            this.socket.once("close", () => {
+                resolve();
+            });
+
+            this.socket.end();
+        });
+    }
+}
+
+
+before(async () => {
+
     const database = new Database();
-    const commmandExecuter = new CommandExecuter(database);
 
-    tcpServer = new TcpServer(commmandExecuter, HOST, PORT);
-    return tcpServer.start();
+    const commandExecuter = new CommandExecuter(database);
+
+    tcpServer = new TcpServer(
+        commandExecuter,
+        HOST,
+        PORT
+    );
+
+    await tcpServer.start();
 });
 
-after(() => {
-    return tcpServer.stop();
+
+after(async () => {
+    await tcpServer.stop();
 });
 
-function connectClient(): Promise<net.Socket> {
-    return new Promise((resolve, reject) => {
-        const socket = net.createConnection({ host: HOST, port: PORT });
 
-        socket.once("connect", () => resolve(socket));
+test("TCP client should connect to the BMis server", async () => {
 
-        socket.once("error", reject);
-    });
-}
+    const client = await TestClient.connect();
 
-function sendCommand(socket: net.Socket, command: string): Promise<string> {
-    return new Promise((resolve, reject) => {
-        const onData = (data: Buffer) => {
-            socket.off("error", onError);
-            resolve(data.toString().trim());
-        };
-
-        const onError = (error: Error) => {
-            socket.off("data", onData);
-            reject(error);
-        };
-
-        socket.once("data", onData);
-        socket.once("error", onError);
-
-        socket.write(`${command}\n`);
-
-    });
-}
-
-function closeClient(socket: net.Socket): Promise<void> {
-    return new Promise((resolve) => {
-        socket.once("close", () => resolve());
-
-        socket.end();
-    });
-}
-
-test("TCP client should connected to the BMis server", async () => {
-    const socket = await connectClient();
-
-    assert.equal(socket.readyState, "open");
-    await closeClient(socket);
+    await client.close();
 });
+
 
 test("TCP server execute SET commands", async () => {
-    const socket = await connectClient();
 
-    const result = await sendCommand(socket, "SET name Mayur");
-    assert.equal(result, "OK");
-    await closeClient(socket);
+    const client = await TestClient.connect();
+
+    const result = await client.send(
+        "SET name Mayur"
+    );
+
+    assert.equal(result, "+OK");
+
+    await client.close();
 });
+
 
 test("TCP server execute GET commands", async () => {
-    const socket = await connectClient();
 
-    await sendCommand(socket, "SET name Mayur");
+    const client = await TestClient.connect();
 
-    const result = await sendCommand(socket, "GET name");
+    await client.send(
+        "SET name Mayur"
+    );
+
+    const result = await client.send(
+        "GET name"
+    );
+
     assert.equal(result, "Mayur");
-    await closeClient(socket);
+
+    await client.close();
 });
+
 
 test("TCP connection should support multiple commands", async () => {
-    const socket = await connectClient();
 
-    assert.equal(await sendCommand(socket, "SET name Mayur"), "OK");
-    assert.equal(await sendCommand(socket, "GET name"), "Mayur");
-    assert.equal(await sendCommand(socket, "EXISTS name"), "1");
-    await closeClient(socket);
+    const client = await TestClient.connect();
+
+    assert.equal(
+        await client.send("SET name Mayur"),
+        "+OK"
+    );
+
+    assert.equal(
+        await client.send("GET name"),
+        "Mayur"
+    );
+
+    assert.equal(
+        await client.send("EXISTS name"),
+        ":1"
+    );
+
+    await client.close();
 });
+
 
 test("TCP server handles multiple clients", async () => {
-    const client1 = await connectClient();
-    const client2 = await connectClient();
 
-    assert.equal(await sendCommand(client1, "SET client1 one"), "OK");
-    assert.equal(await sendCommand(client1, "SET client2 two"), "OK");
+    const client1 = await TestClient.connect();
 
-    assert.equal(await sendCommand(client2, "GET client1"), "one");
-    assert.equal(await sendCommand(client2, "GET client2"), "two");
+    const client2 = await TestClient.connect();
 
-    await closeClient(client1);
-    await closeClient(client2);
+    assert.equal(
+        await client1.send("SET client1 one"),
+        "+OK"
+    );
+
+    assert.equal(
+        await client2.send("SET client2 two"),
+        "+OK"
+    );
+
+    assert.equal(
+        await client1.send("GET client1"),
+        "one"
+    );
+
+    assert.equal(
+        await client2.send("GET client2"),
+        "two"
+    );
+
+    await client1.close();
+
+    await client2.close();
 });
+
 
 test("TCP server handles multiple commands received in one packet", async () => {
-    const socket = await connectClient();
 
-    const response: string[] = [];
+    const client = await TestClient.connect();
 
-    const responsePromise = new Promise<void>((resolve, reject) => {
-        const timeout = setTimeout(() => {
-            reject(new Error("Timed out waiting for response"));
-        }, 1000);
+    const responses: Promise<string>[] = [];
 
-        socket.on("data", (data: Buffer) => {
-            const lines = data.toString().split("\n").filter(Boolean);
+    responses.push(client.send("SET packet one"));
+    responses.push(client.send("GET packet"));
+    responses.push(client.send("EXISTS packet"));
 
-            response.push(...lines);
+    assert.deepEqual(
+        await Promise.all(responses),
+        [
+            "+OK",
+            "one",
+            ":1",
+        ]
+    );
 
-            if (lines.length === 3) {
-                clearTimeout(timeout);
-                resolve();
-            }
-        });
-    });
-    socket.write('SET packet one\nGET packet\nEXISTS packet\n');
-
-    await responsePromise;
-
-    assert.deepEqual(response, ["OK", "one", "1"]);
-
-    await closeClient(socket);
+    await client.close();
 });
 
-test('TCP server handles a command split across packets', async () => {
-    const socket = await connectClient();
 
-    const responsePromise = new Promise<string>((resolve, reject) => {
-        const timeout = setTimeout(() => {
-            reject(new Error('Timed out waiting for TCP response'));
-        }, 1000);
+test("TCP server handles a command split across packets", async () => {
+    const client = await TestClient.connect();
 
-        socket.once('data', (data: Buffer) => {
-            clearTimeout(timeout);
-            resolve(data.toString().trim());
-        });
-    });
-
-    socket.write('SET split Ma');
+    client.writeRaw("SET split Ma");
 
     await new Promise((resolve) => {
         setTimeout(resolve, 50);
     });
 
-    socket.write('yur\n');
+    const responsePromise = client.send("yur");
 
-    const result = await responsePromise;
+    assert.equal(
+        await responsePromise,
+        "+OK"
+    );
 
-    assert.equal(result, 'OK');
+    assert.equal(
+        await client.send("GET split"),
+        "Mayur"
+    );
 
-    await closeClient(socket);
+    await client.close();
 });
 
 
 test("TCP server ignores empty commands", async () => {
-    const socket = await connectClient();
 
-    socket.write('\n');
-    await new Promise(resolve => setTimeout(resolve, 50));
+    const client = await TestClient.connect();
 
-    assert.equal(socket.destroyed, false);
+    assert.equal(
+        await client.send("SET empty test"),
+        "+OK"
+    );
 
-    await closeClient(socket);
+    await client.close();
 });

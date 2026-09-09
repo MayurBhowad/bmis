@@ -14,7 +14,7 @@ class Protocol {
             let response = `*${result.length}\r\n`;
 
             for(const item of result) {
-                response += `$${item.length}\r\n`;
+                response += `$${Buffer.byteLength(item, 'utf-8')}\r\n`;
                 response += `${item}\r\n`;
             }
 
@@ -33,7 +33,7 @@ class Protocol {
             return `-${result}\r\n`;
         }
 
-        return `$${result.length}\r\n${result}\r\n`;
+        return `$${Buffer.byteLength(result, 'utf8')}\r\n${result}\r\n`;
     }
 }
 
