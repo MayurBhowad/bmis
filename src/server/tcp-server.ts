@@ -63,15 +63,31 @@ class TcpServer {
         return String(result);
     }
 
-    start(): void {
-        this.server.listen(this.port, this.host, () => {
-            console.log(`BMis TCP server is running on ${this.host}:${this.port}`);
+    start(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            this.server.once('error', reject);
+    
+            this.server.listen(this.port, this.host, () => {
+                console.log(
+                    `BMIS TCP server listening on ${this.host}:${this.port}`
+                );
+    
+                resolve();
+            });
         });
     }
 
-    stop(): void {
-        this.server.close(() => {
-            console.log(`BMis TCP server is stopped`);
+    stop(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            this.server.close((error) => {
+                if (error) {
+                    reject(error);
+                    return;
+                }
+    
+                console.log('BMIS TCP server stopped');
+                resolve();
+            });
         });
     }
 }
