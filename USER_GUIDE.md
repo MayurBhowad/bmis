@@ -2,14 +2,14 @@
 
 **Version:** v0.5.0
 
-BMis is an interactive command-line key-value store. You type commands at the `BMis>` prompt; data lives in memory for that session only.
+BMis is an in-memory key-value store with an interactive CLI and a TCP server. You can type commands at the `BMis>` prompt or send the same commands over TCP; data lives in memory for that process only and is shared across both interfaces.
 
 ## Requirements
 
 - [Node.js](https://nodejs.org/) (LTS recommended)
 - Project dependencies via `npm install` (TypeScript is a dev dependency)
 
-## Starting the CLI
+## Starting BMis
 
 From the project root:
 
@@ -19,11 +19,12 @@ npm run build
 npm start
 ```
 
-`npm start` runs the compiled CLI (`node dist/src/index.js`).
+`npm start` runs the compiled entry point (`node dist/src/index.js`). It starts both the TCP server and the interactive CLI.
 
 You should see:
 
 ```text
+BMis TCP server is running on 127.0.0.1:6379
 Welcome to BMis CLI
 Type commands like: SET name Mayur
 BMis>
@@ -32,6 +33,36 @@ BMis>
 Type a command and press Enter. After each response, the prompt returns so you can run another command.
 
 To leave the session, press `Ctrl+C` (or close the terminal). All stored keys are discarded when the process exits.
+
+## TCP server
+
+On start, BMis listens on **`127.0.0.1:6379`** (host and port are the current defaults in `TcpServer`).
+
+- Protocol: plain text, **one command per line** (newline-delimited). Not RESP yet.
+- Commands and arity rules are the same as the CLI.
+- The TCP server and CLI share the same in-memory database in that process.
+- Missing / null values are returned as `(nil)` over TCP (the CLI prints `null`).
+- Multi-value results (for example `LRANGE`) are written as one element per line over TCP.
+
+Example with `nc`:
+
+```bash
+nc 127.0.0.1 6379
+```
+
+```text
+SET name Mayur
+OK
+GET name
+Mayur
+GET missing
+(nil)
+RPUSH fruits apple banana
+2
+LRANGE fruits 0 -1
+apple
+banana
+```
 
 ## How commands work
 
@@ -639,6 +670,7 @@ ERR wrong number of arguments for GET command
 ## Sample session
 
 ```text
+BMis TCP server is running on 127.0.0.1:6379
 Welcome to BMis CLI
 Type commands like: SET name Mayur
 BMis> SET name Mayur
@@ -680,7 +712,7 @@ BMis> EXISTS name
 ## Current limitations
 
 - No persistence — restarting clears all data
-- No networking — local CLI only
+- TCP is line-oriented plain text only (no RESP yet); default bind is `127.0.0.1:6379`
 - No hashes or other data types yet (strings and lists are supported)
 - No authentication or multi-user access
 
