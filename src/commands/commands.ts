@@ -17,6 +17,7 @@ import lindex from './lindex';
 import { CommandHandler } from '../types';
 import lset from './lset';
 import ltrim from './ltrim';
+import rpoplpush from './rpoplpush';
 
 const commands: Record<string, CommandHandler> = {
     SET: set,
@@ -38,6 +39,7 @@ const commands: Record<string, CommandHandler> = {
     LINDEX: lindex,
     LSET: lset,
     LTRIM: ltrim,
+    RPOPLPUSH: rpoplpush,
 };
 
 export default commands;

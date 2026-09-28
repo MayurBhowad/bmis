@@ -670,3 +670,85 @@ test("LTRIM validates arguments", () => {
     assert.strictEqual(executor.execute("LTRIM users"), "ERR wrong number of arguments for LTRIM command");
     assert.strictEqual(executor.execute("LTRIM users 0"), "ERR wrong number of arguments for LTRIM command");
 });
+
+test("RPOPLPUSH moves the last element to the front of another list", () => {
+    const executor = createExecutor();
+    executor.execute("RPUSH source A B C");
+    executor.execute("RPUSH destination X Y");
+
+    const result = executor.execute("RPOPLPUSH source destination");
+
+    assert.strictEqual(result, "C");
+
+    assert.deepStrictEqual(executor.execute("LRANGE source 0 -1"), ["A", "B"]);
+    assert.deepStrictEqual(executor.execute("LRANGE destination 0 -1"), ["C", "X", "Y"]);
+});
+
+test("RPOPLPUSH creates the destination list if it doesn't exist", () => {
+    const executor = createExecutor();
+    executor.execute("RPUSH source A B C");
+    const result = executor.execute("RPOPLPUSH source destination");
+
+    assert.strictEqual(result, "C");
+
+    assert.deepStrictEqual(executor.execute("LRANGE source 0 -1"), ["A", "B"]);
+    assert.deepStrictEqual(executor.execute("LRANGE destination 0 -1"), ["C"]);
+});
+
+test("RPOPLPUSH returns WRONGTYPE when destination is not a list", () => {
+    const executor = createExecutor();
+    executor.execute("RPUSH source A B C");
+    executor.execute("SET destination hello");
+
+    const result = executor.execute("RPOPLPUSH source destination");
+
+    assert.strictEqual(result, "WRONGTYPE Operation against a key holding the wrong kind of value");
+
+    assert.deepStrictEqual(executor.execute("LRANGE source 0 -1"), ["A", "B", "C"]);
+});
+
+test("RPOPLPUSH returns null when source does not exist", () => {
+    const executor = createExecutor();
+    const result = executor.execute("RPOPLPUSH missing destination");
+
+    assert.strictEqual(result, null);
+
+    assert.deepStrictEqual(executor.execute("LRANGE destination 0 -1"), []);
+});
+
+test("RPOPLPUSH returns WRONGTYPE when source is not a list", () => {
+    const executor = createExecutor();
+    executor.execute("SET source hello");
+    const result = executor.execute("RPOPLPUSH source destination");
+
+    assert.strictEqual(result, "WRONGTYPE Operation against a key holding the wrong kind of value");
+});
+
+test("RPOPLPUSH rotates a list when source and destination are the same", () => {
+    const executor = createExecutor();
+    executor.execute("RPUSH users A B C");
+    const result = executor.execute("RPOPLPUSH users users");
+
+    assert.strictEqual(result, "C");
+
+    assert.deepStrictEqual(executor.execute("LRANGE users 0 -1"), ["C", "A", "B"]);
+});
+
+test("RPOPLPUSH validates arguments", () => {
+    const executor = createExecutor();
+    assert.strictEqual(executor.execute("RPOPLPUSH"), "ERR wrong number of arguments for RPOPLPUSH command");
+    assert.strictEqual(executor.execute("RPOPLPUSH source"), "ERR wrong number of arguments for RPOPLPUSH command");
+    assert.strictEqual(executor.execute("RPOPLPUSH source destination extra"), "ERR wrong number of arguments for RPOPLPUSH command");
+});
+
+test("RPOPLPUSH removes the source key when its last element is moved", () => {
+    const executor = createExecutor();
+    executor.execute("RPUSH source A");
+
+    const result = executor.execute("RPOPLPUSH source destination");
+
+    assert.strictEqual(result, "A");
+    assert.strictEqual(executor.execute("EXISTS source"), 0);
+
+    assert.deepStrictEqual(executor.execute("LRANGE destination 0 -1"), ["A"]);
+});
