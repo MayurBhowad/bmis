@@ -752,3 +752,61 @@ test("RPOPLPUSH removes the source key when its last element is moved", () => {
 
     assert.deepStrictEqual(executor.execute("LRANGE destination 0 -1"), ["A"]);
 });
+
+test("LPOS return the index of an element", () => {
+    const executor = createExecutor();
+    executor.execute("RPUSH users Mayur John Rahul");
+    const result = executor.execute("LPOS users John");
+    assert.strictEqual(result, 1);
+});
+
+test("LPOS returns null when the element does not exist", () => {
+    const executor = createExecutor();
+
+    executor.execute("RPUSH users Mayur John Rahul");
+
+    const result = executor.execute("LPOS users Akshay");
+
+    assert.strictEqual(result, null);
+});
+
+test("LPOS returns null when the key does not exist", () => {
+    const executor = createExecutor();
+
+    const result = executor.execute("LPOS missing John");
+
+    assert.strictEqual(result, null);
+});
+
+test("LPOS returns WRONGTYPE when the key is not a list", () => {
+    const executor = createExecutor();
+
+    executor.execute("SET users hello");
+
+    const result = executor.execute("LPOS users hello");
+
+    assert.strictEqual(
+        result,
+        "WRONGTYPE Operation against a key holding the wrong kind of value"
+    );
+});
+
+test("LPOS validates arguments", () => {
+    const executor = createExecutor();
+
+    assert.strictEqual(
+        executor.execute("LPOS"),
+        "ERR wrong number of arguments for LPOS command"
+    );
+
+    assert.strictEqual(
+        executor.execute("LPOS users"),
+        "ERR wrong number of arguments for LPOS command"
+    );
+
+    assert.strictEqual(
+        executor.execute("LPOS users John extra"),
+        "ERR wrong number of arguments for LPOS command"
+    );
+});
+

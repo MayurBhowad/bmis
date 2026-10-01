@@ -18,6 +18,7 @@ import { CommandHandler } from '../types';
 import lset from './lset';
 import ltrim from './ltrim';
 import rpoplpush from './rpoplpush';
+import lpos from './lpos';
 
 const commands: Record<string, CommandHandler> = {
     SET: set,
@@ -40,6 +41,7 @@ const commands: Record<string, CommandHandler> = {
     LSET: lset,
     LTRIM: ltrim,
     RPOPLPUSH: rpoplpush,
+    LPOS: lpos,
 };
 
 export default commands;
