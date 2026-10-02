@@ -14,8 +14,10 @@ class Protocol {
             let response = `*${result.length}\r\n`;
 
             for(const item of result) {
-                response += `$${Buffer.byteLength(item, 'utf-8')}\r\n`;
-                response += `${item}\r\n`;
+                const value = String(item);
+
+                response += `$${Buffer.byteLength(value, 'utf-8')}\r\n`;
+                response += `${value}\r\n`;
             }
 
             return response;
