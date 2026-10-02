@@ -810,3 +810,50 @@ test("LPOS validates arguments", () => {
     );
 });
 
+test("LPOS returns the requested rank", () => {
+    const executor = createExecutor();
+
+    executor.execute("RPUSH users A B C B D B");
+
+    assert.strictEqual(
+        executor.execute("LPOS users B RANK 2"),
+        3
+    );
+});
+
+test("LPOS supports negative rank", () => {
+    const executor = createExecutor();
+
+    executor.execute("RPUSH users A B C B D B");
+
+    assert.strictEqual(
+        executor.execute("LPOS users B RANK -1"),
+        5
+    );
+
+    assert.strictEqual(
+        executor.execute("LPOS users B RANK -2"),
+        3
+    );
+
+    assert.strictEqual(
+        executor.execute("LPOS users B RANK -3"),
+        1
+    );
+});
+
+test("LPOS returns null when the requested rank does not exist", () => {
+    const executor = createExecutor();
+
+    executor.execute("RPUSH users A B C");
+
+    assert.strictEqual(
+        executor.execute("LPOS users B RANK 2"),
+        null
+    );
+
+    assert.strictEqual(
+        executor.execute("LPOS users B RANK -2"),
+        null
+    );
+});
