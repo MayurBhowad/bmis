@@ -24,7 +24,7 @@ npm start
 You should see:
 
 ```text
-BMis TCP server is running on 127.0.0.1:6379
+BMIS TCP server listening on 127.0.0.1:6379
 Welcome to BMis CLI
 Type commands like: SET name Mayur
 BMis>
@@ -38,11 +38,17 @@ To leave the session, press `Ctrl+C` (or close the terminal). All stored keys ar
 
 On start, BMis listens on **`127.0.0.1:6379`** (host and port are the current defaults in `TcpServer`).
 
-- Protocol: plain text, **one command per line** (newline-delimited). Not RESP yet.
-- Commands and arity rules are the same as the CLI.
+- Commands are plain text, **one command per line** (newline-delimited). The same commands and arity rules as the CLI apply.
+- Replies are **RESP**, terminated with `\r\n`:
+  - `OK` → `+OK`
+  - integers (`INCR`, `LLEN`, `LPOS` without `COUNT`, and similar) → `:<n>`
+  - other strings (`GET`, popped elements, errors' text values) → `$<byte-length>` followed by the value. The length is the UTF-8 byte length.
+  - `null` → `$-1` (the CLI prints `null`)
+  - arrays (`LRANGE`, `LPOS ... COUNT`) → `*<count>` followed by one bulk string per element. Numeric indexes are sent as bulk strings, not integer replies.
+  - errors (`ERR ...` and `WRONGTYPE ...`) → `-<message>`
+  - a blank command produces no reply
 - The TCP server and CLI share the same in-memory database in that process.
-- Missing / null values are returned as `(nil)` over TCP (the CLI prints `null`).
-- Multi-value results (for example `LRANGE`) are written as one element per line over TCP.
+- Clients that send RESP commands (for example `redis-cli`) are not supported yet. Use a line-based client such as `nc`.
 
 Example with `nc`:
 
@@ -52,15 +58,19 @@ nc 127.0.0.1 6379
 
 ```text
 SET name Mayur
-OK
++OK
 GET name
+$5
 Mayur
 GET missing
-(nil)
+$-1
 RPUSH fruits apple banana
-2
+:2
 LRANGE fruits 0 -1
+*2
+$5
 apple
+$6
 banana
 ```
 
@@ -83,7 +93,7 @@ banana
 - `LSET` takes a key, an index, and a value. It updates the element at that index and returns `OK`.
 - `LTRIM` takes a key, a start index, and a stop index (both inclusive). It keeps only that range and returns `OK`. An empty or out-of-bounds range deletes the key.
 - `RPOPLPUSH` takes a source key and a destination key. It removes the last element of the source list and prepends it to the destination list, returning that element. The same key may be used for both to rotate the list.
-- `LPOS` takes a key and an element, and optionally `RANK <rank>`. It returns the zero-based index of a matching element, or `null` if the key or element is missing. Positive rank counts matches from the left; negative rank counts from the right. Rank `0` is invalid.
+- `LPOS` takes a key and an element, and optionally `RANK <rank>` and/or `COUNT <count>` (either order). Without `COUNT` it returns one zero-based index, or `null` if the key or match is missing. With `COUNT` it returns a list of indexes. Positive rank counts matches from the left; negative rank counts from the right. Rank `0` is invalid. `COUNT 0` returns every match from the chosen rank. A negative `COUNT` is rejected.
 - `SET` clears any existing expiration when overwriting a key. `INCR` and `DECR` also clear expiration when they update a key.
 - Blank lines produce no output; the prompt simply returns.
 - Data is **in-memory only** — nothing is written to disk.
@@ -687,17 +697,21 @@ WRONGTYPE Operation against a key holding the wrong kind of value
 
 ### LPOS — find the index of a list element
 
-**Syntax:** `LPOS <key> <element>` or `LPOS <key> <element> RANK <rank>`
+**Syntax:** `LPOS <key> <element> [RANK <rank>] [COUNT <count>]`
 
-Returns the zero-based index of `element` in the list at `key`. Without `RANK`, the first match from the left is returned (rank `1`). `RANK n` selects the nth match counting from the left when `n` is positive, or from the right when `n` is negative. The returned index is always counted from the start of the list. Rank `0` is rejected. A missing key, a missing element, or a rank past the number of matches returns `null`.
+Returns the zero-based index of `element` in the list at `key`. Without `RANK`, the first match from the left is returned (rank `1`). `RANK n` selects the nth match counting from the left when `n` is positive, or from the right when `n` is negative. The returned index is always counted from the start of the list. Rank `0` is rejected.
+
+`COUNT` changes the result from one index to a list of indexes. The CLI prints that list as a JavaScript array. `COUNT n` returns up to `n` matches, starting at the selected rank. `COUNT 0` returns every match from that rank. `RANK` and `COUNT` may appear in either order. With a negative rank, matches are collected while scanning from the right, so the indexes come back in right-to-left order. A missing element with `COUNT` returns an empty list. A missing key still returns `null`. A negative `COUNT` is rejected.
 
 | Result | Meaning |
 |--------|---------|
-| *(index)* | Zero-based index of the selected match |
-| `null` | Key is missing, element is not in the list, or the requested rank does not exist |
-| `ERR wrong number of arguments for LPOS command` | Not exactly two arguments, or not exactly `RANK` plus a rank |
-| `ERR syntax error` | Optional form is present but the option is not `RANK` |
-| `ERR value is not an integer or out of range` | Rank is not a non-zero integer |
+| *(index)* | Zero-based index of the selected match (no `COUNT`) |
+| *(list of indexes)* | Matches selected by `COUNT` |
+| `null` | No `COUNT`, and the key is missing, the element is absent, or the rank does not exist |
+| `ERR wrong number of arguments for LPOS command` | Not 2, 4, or 6 arguments (each option needs its value) |
+| `ERR syntax error` | An option is not `RANK` or `COUNT` |
+| `ERR value is not an integer or out of range` | Rank is not a non-zero integer, or `COUNT` is not an integer |
+| `ERR count should be > 0` | `COUNT` is negative |
 | `WRONGTYPE Operation against a key holding the wrong kind of value` | Key exists but is not a list |
 
 **Examples:**
@@ -717,8 +731,20 @@ BMis> LPOS letters B RANK 2
 3
 BMis> LPOS letters B RANK -1
 5
+BMis> LPOS letters B COUNT 2
+[ 1, 3 ]
+BMis> LPOS letters B COUNT 0
+[ 1, 3, 5 ]
+BMis> LPOS letters B RANK 2 COUNT 2
+[ 3, 5 ]
+BMis> LPOS letters B RANK -2 COUNT 2
+[ 3, 1 ]
+BMis> LPOS letters Z COUNT 1
+[]
 BMis> LPOS letters B RANK 0
 ERR value is not an integer or out of range
+BMis> LPOS letters B COUNT -1
+ERR count should be > 0
 BMis> SET name Mayur
 OK
 BMis> LPOS name Mayur
@@ -731,8 +757,9 @@ WRONGTYPE Operation against a key holding the wrong kind of value
 |---------|--------|
 | `ERR unknown command '<COMMAND>'` | Command name is not recognized |
 | `ERR wrong number of arguments for <COMMAND> command` | Too few or too many arguments for that command |
-| `ERR value is not an integer or out of range` | `EXPIRE`, `INCR`, `DECR`, `LRANGE`, `LINDEX`, `LSET`, `LTRIM`, or `LPOS RANK` received a non-integer value (`LPOS` also rejects rank `0`) |
-| `ERR syntax error` | `SET ... EX` is missing seconds or `EX` is not in the correct position, or `LPOS` has an option other than `RANK` |
+| `ERR value is not an integer or out of range` | `EXPIRE`, `INCR`, `DECR`, `LRANGE`, `LINDEX`, `LSET`, `LTRIM`, or `LPOS` received a non-integer value (`LPOS` rank `0` is rejected the same way) |
+| `ERR count should be > 0` | `LPOS` `COUNT` is negative (`COUNT 0` is allowed and means every match) |
+| `ERR syntax error` | `SET ... EX` is missing seconds or `EX` is not in the correct position, or `LPOS` has an option other than `RANK` or `COUNT` |
 | `ERR invalid expire time in 'SET' command` | `SET ... EX` seconds argument is not a valid whole number |
 | `ERR no such key` | `LSET` was called on a missing key |
 | `ERR index out of range` | `LSET` index is outside the list bounds |
@@ -752,7 +779,7 @@ ERR wrong number of arguments for GET command
 ## Sample session
 
 ```text
-BMis TCP server is running on 127.0.0.1:6379
+BMIS TCP server listening on 127.0.0.1:6379
 Welcome to BMis CLI
 Type commands like: SET name Mayur
 BMis> SET name Mayur
@@ -798,7 +825,7 @@ BMis> EXISTS name
 ## Current limitations
 
 - No persistence — restarting clears all data
-- TCP is line-oriented plain text only (no RESP yet); default bind is `127.0.0.1:6379`
+- TCP commands are plain text, one per line; replies are RESP. Inbound RESP is not parsed yet. Default bind is `127.0.0.1:6379`
 - No hashes or other data types yet (strings and lists are supported)
 - No authentication or multi-user access
 

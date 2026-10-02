@@ -8,7 +8,7 @@ BMis starts as a minimal key-value engine and is evolving toward a networked dat
 
 ## Current status
 
-v0.5.0 — TypeScript interactive CLI plus a TCP server over a shared in-memory key-value store, with unit tests for the database, parser, and command executer. On start, BMis listens on **`127.0.0.1:6379`** for line-oriented TCP clients while the local CLI remains available. The database layer uses an injectable `Storage` backend (defaults to in-memory). Values are stored with type metadata — **strings** and **lists** are supported and can be inspected with `TYPE`. Integer strings can be incremented or decremented with `INCR` and `DECR`. Lists support `LPUSH`, `RPUSH`, `LPOP`, `RPOP`, `LRANGE`, `LLEN`, `LINDEX`, `LSET`, `LTRIM`, `RPOPLPUSH`, and `LPOS`. Keys can expire via `EXPIRE`, `SET ... EX`, or remaining TTL can be queried with `TTL`; expired keys are removed lazily on `GET`, `TTL`, and `TYPE`, and `SET` clears expiration when overwriting a key.
+v0.5.0 — TypeScript interactive CLI plus a TCP server over a shared in-memory key-value store, with unit tests for the database, parser, command executer, RESP encoder, and TCP server. On start, BMis listens on **`127.0.0.1:6379`**. Clients send one plain-text command per line; replies are RESP. The local CLI remains available. The database layer uses an injectable `Storage` backend (defaults to in-memory). Values are stored with type metadata — **strings** and **lists** are supported and can be inspected with `TYPE`. Integer strings can be incremented or decremented with `INCR` and `DECR`. Lists support `LPUSH`, `RPUSH`, `LPOP`, `RPOP`, `LRANGE`, `LLEN`, `LINDEX`, `LSET`, `LTRIM`, `RPOPLPUSH`, and `LPOS`. Keys can expire via `EXPIRE`, `SET ... EX`, or remaining TTL can be queried with `TTL`; expired keys are removed lazily on `GET`, `TTL`, and `TYPE`, and `SET` clears expiration when overwriting a key.
 
 | Command | Args | Description | Example |
 |---------|------|-------------|---------|
@@ -31,7 +31,7 @@ v0.5.0 — TypeScript interactive CLI plus a TCP server over a shared in-memory 
 | `LSET` | key, index, value | Set a list element at index | `LSET fruits 1 mango` → `OK` |
 | `LTRIM` | key, start, stop | Trim a list to the given inclusive range | `LTRIM fruits 1 2` → `OK` |
 | `RPOPLPUSH` | source, destination | Pop the last element of `source` and prepend it to `destination` | `RPOPLPUSH source dest` → `C` (or `null` if source is missing) |
-| `LPOS` | key, element [`RANK` rank] | Return the index of an element (`RANK` selects the nth match) | `LPOS users John` → `1` (or `null` if missing) |
+| `LPOS` | key, element [`RANK` rank] [`COUNT` count] | Return the index of an element, or a list of indexes when `COUNT` is set | `LPOS users John` → `1` (or `null` if missing) |
 
 Commands are case-insensitive. For `SET`, everything after the key is the value (spaces allowed), unless `EX seconds` is appended to set expiration in the same command.
 
@@ -41,9 +41,10 @@ Errors:
 - Wrong arity → `ERR wrong number of arguments for <COMMAND> command`
 - Invalid `EXPIRE` seconds (non-integer or out of range) → `ERR value is not an integer or out of range`
 - Invalid `INCR` / `DECR` value (non-integer) → `ERR value is not an integer or out of range`
-- Invalid `SET ... EX` syntax, or `LPOS` without a valid `RANK` option → `ERR syntax error`
+- Invalid `SET ... EX` syntax, or an unknown `LPOS` option → `ERR syntax error`
 - Invalid `SET ... EX` seconds → `ERR invalid expire time in 'SET' command`
-- Invalid `LPOS` rank (non-integer or `0`) → `ERR value is not an integer or out of range`
+- Invalid `LPOS` rank (non-integer or `0`) or non-integer `COUNT` → `ERR value is not an integer or out of range`
+- Negative `LPOS` `COUNT` → `ERR count should be > 0`
 - Wrong type for list operation → `WRONGTYPE Operation against a key holding the wrong kind of value`
 - Missing list for `LSET` → `ERR no such key`
 - Out-of-range index for `LSET` → `ERR index out of range`
@@ -55,7 +56,8 @@ src/
 ├── index.ts                      # CLI + TCP server entry point
 ├── types.ts                      # Shared TypeScript types
 ├── server/
-│   └── tcp-server.ts             # Line-oriented TCP server (default 127.0.0.1:6379)
+│   ├── tcp-server.ts             # TCP server (default 127.0.0.1:6379)
+│   └── protocol.ts               # RESP encoder for TCP replies
 ├── database/
 │   ├── database.ts               # Typed value store with injectable Storage backend
 │   └── storage.ts                # Low-level Map-backed storage layer
@@ -86,7 +88,10 @@ src/
 tests/
 ├── database.test.ts              # Database unit tests (node:test)
 ├── commands.test.ts              # CommandExecuter / CLI command tests
-└── parser.test.ts                # CLI input parser tests
+├── parser.test.ts                # CLI input parser tests
+└── server/
+    ├── protocol.test.ts          # RESP encoder tests
+    └── tcp-server.test.ts        # TCP server tests
 ```
 
 ## Requirements
@@ -117,7 +122,7 @@ For a full walkthrough of commands, TCP usage, responses, and errors, see **[USE
 Starts an interactive session (TCP is also listening):
 
 ```text
-BMis TCP server is running on 127.0.0.1:6379
+BMIS TCP server listening on 127.0.0.1:6379
 Welcome to BMis CLI
 Type commands like: SET name Mayur
 BMis> SET name Mayur
@@ -134,7 +139,7 @@ BMis> SET
 ERR wrong number of arguments for SET command
 ```
 
-Connect over TCP with any line-based client (for example `nc 127.0.0.1 6379`) and send the same commands, one per line.
+Connect with a line-based client (for example `nc 127.0.0.1 6379`) and send the same commands, one per line. Replies use RESP (`+OK`, `:n`, bulk strings, arrays, `$-1` for null, and `-` errors). Inbound RESP, such as from `redis-cli`, is not parsed yet.
 
 ## Roadmap (high level)
 
@@ -142,8 +147,8 @@ Incremental versions toward:
 
 - Multiple native data structures (strings and lists supported; hashes pending)
 - Key expiration
-- TCP networking and client-server communication (line-oriented TCP on `127.0.0.1:6379` in place)
-- RESP-compatible protocol
+- TCP networking and client-server communication (plain-text commands on `127.0.0.1:6379` in place)
+- RESP-compatible protocol (reply encoding in place; command parsing still plain text)
 - Persistence (injectable `Storage` layer in place)
 - Pub/Sub
 - Replication and distributed capabilities
