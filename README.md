@@ -8,7 +8,7 @@ BMis starts as a minimal key-value engine and is evolving toward a networked dat
 
 ## Current status
 
-v0.5.0 — TypeScript interactive CLI plus a TCP server over a shared in-memory key-value store, with unit tests for the database, parser, and command executer. On start, BMis listens on **`127.0.0.1:6379`** for line-oriented TCP clients while the local CLI remains available. The database layer uses an injectable `Storage` backend (defaults to in-memory). Values are stored with type metadata — **strings** and **lists** are supported and can be inspected with `TYPE`. Integer strings can be incremented or decremented with `INCR` and `DECR`. Lists support `LPUSH`, `RPUSH`, `LPOP`, `RPOP`, `LRANGE`, `LLEN`, `LINDEX`, `LSET`, and `LTRIM`. Keys can expire via `EXPIRE`, `SET ... EX`, or remaining TTL can be queried with `TTL`; expired keys are removed lazily on `GET`, `TTL`, and `TYPE`, and `SET` clears expiration when overwriting a key.
+v0.5.0 — TypeScript interactive CLI plus a TCP server over a shared in-memory key-value store, with unit tests for the database, parser, and command executer. On start, BMis listens on **`127.0.0.1:6379`** for line-oriented TCP clients while the local CLI remains available. The database layer uses an injectable `Storage` backend (defaults to in-memory). Values are stored with type metadata — **strings** and **lists** are supported and can be inspected with `TYPE`. Integer strings can be incremented or decremented with `INCR` and `DECR`. Lists support `LPUSH`, `RPUSH`, `LPOP`, `RPOP`, `LRANGE`, `LLEN`, `LINDEX`, `LSET`, `LTRIM`, `RPOPLPUSH`, and `LPOS`. Keys can expire via `EXPIRE`, `SET ... EX`, or remaining TTL can be queried with `TTL`; expired keys are removed lazily on `GET`, `TTL`, and `TYPE`, and `SET` clears expiration when overwriting a key.
 
 | Command | Args | Description | Example |
 |---------|------|-------------|---------|
@@ -30,6 +30,8 @@ v0.5.0 — TypeScript interactive CLI plus a TCP server over a shared in-memory 
 | `LINDEX` | key, index | Get a list element by index | `LINDEX fruits 0` → `apple` (or `null` if out of range) |
 | `LSET` | key, index, value | Set a list element at index | `LSET fruits 1 mango` → `OK` |
 | `LTRIM` | key, start, stop | Trim a list to the given inclusive range | `LTRIM fruits 1 2` → `OK` |
+| `RPOPLPUSH` | source, destination | Pop the last element of `source` and prepend it to `destination` | `RPOPLPUSH source dest` → `C` (or `null` if source is missing) |
+| `LPOS` | key, element [`RANK` rank] | Return the index of an element (`RANK` selects the nth match) | `LPOS users John` → `1` (or `null` if missing) |
 
 Commands are case-insensitive. For `SET`, everything after the key is the value (spaces allowed), unless `EX seconds` is appended to set expiration in the same command.
 
@@ -39,8 +41,9 @@ Errors:
 - Wrong arity → `ERR wrong number of arguments for <COMMAND> command`
 - Invalid `EXPIRE` seconds (non-integer or out of range) → `ERR value is not an integer or out of range`
 - Invalid `INCR` / `DECR` value (non-integer) → `ERR value is not an integer or out of range`
-- Invalid `SET ... EX` syntax → `ERR syntax error`
+- Invalid `SET ... EX` syntax, or `LPOS` without a valid `RANK` option → `ERR syntax error`
 - Invalid `SET ... EX` seconds → `ERR invalid expire time in 'SET' command`
+- Invalid `LPOS` rank (non-integer or `0`) → `ERR value is not an integer or out of range`
 - Wrong type for list operation → `WRONGTYPE Operation against a key holding the wrong kind of value`
 - Missing list for `LSET` → `ERR no such key`
 - Out-of-range index for `LSET` → `ERR index out of range`
@@ -77,7 +80,9 @@ src/
     ├── llen.ts                   # LLEN command
     ├── lindex.ts                 # LINDEX command
     ├── lset.ts                   # LSET command
-    └── ltrim.ts                  # LTRIM command
+    ├── ltrim.ts                  # LTRIM command
+    ├── rpoplpush.ts              # RPOPLPUSH command
+    └── lpos.ts                   # LPOS command
 tests/
 ├── database.test.ts              # Database unit tests (node:test)
 ├── commands.test.ts              # CommandExecuter / CLI command tests

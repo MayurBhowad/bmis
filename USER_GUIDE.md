@@ -82,6 +82,8 @@ banana
 - `LINDEX` takes a key and an index. Negative indices count from the end of the list. Returns `null` if the key or index is out of range.
 - `LSET` takes a key, an index, and a value. It updates the element at that index and returns `OK`.
 - `LTRIM` takes a key, a start index, and a stop index (both inclusive). It keeps only that range and returns `OK`. An empty or out-of-bounds range deletes the key.
+- `RPOPLPUSH` takes a source key and a destination key. It removes the last element of the source list and prepends it to the destination list, returning that element. The same key may be used for both to rotate the list.
+- `LPOS` takes a key and an element, and optionally `RANK <rank>`. It returns the zero-based index of a matching element, or `null` if the key or element is missing. Positive rank counts matches from the left; negative rank counts from the right. Rank `0` is invalid.
 - `SET` clears any existing expiration when overwriting a key. `INCR` and `DECR` also clear expiration when they update a key.
 - Blank lines produce no output; the prompt simply returns.
 - Data is **in-memory only** — nothing is written to disk.
@@ -643,14 +645,94 @@ BMis> LTRIM name 0 1
 WRONGTYPE Operation against a key holding the wrong kind of value
 ```
 
+### RPOPLPUSH — move the last element to another list
+
+**Syntax:** `RPOPLPUSH <source> <destination>`
+
+Removes the last element of `source` and prepends it to `destination`, then returns that element. If `destination` does not exist, it is created as a list containing that element. Using the same key for both rotates the list (the last element becomes the first). When the source list's last element is moved, the source key is deleted. A missing or empty source returns `null` and leaves `destination` unchanged. If either key exists and is not a list, nothing is moved.
+
+| Result | Meaning |
+|--------|---------|
+| *(value)* | Element that was moved |
+| `null` | Source is missing or empty |
+| `ERR wrong number of arguments for RPOPLPUSH command` | Not exactly two keys |
+| `WRONGTYPE Operation against a key holding the wrong kind of value` | Source or destination exists and is not a list |
+
+**Examples:**
+
+```text
+BMis> RPUSH source A B C
+3
+BMis> RPUSH destination X Y
+2
+BMis> RPOPLPUSH source destination
+C
+BMis> LRANGE source 0 -1
+A,B
+BMis> LRANGE destination 0 -1
+C,X,Y
+BMis> RPOPLPUSH missing destination
+null
+BMis> RPUSH users A B C
+3
+BMis> RPOPLPUSH users users
+C
+BMis> LRANGE users 0 -1
+C,A,B
+BMis> SET name Mayur
+OK
+BMis> RPOPLPUSH name destination
+WRONGTYPE Operation against a key holding the wrong kind of value
+```
+
+### LPOS — find the index of a list element
+
+**Syntax:** `LPOS <key> <element>` or `LPOS <key> <element> RANK <rank>`
+
+Returns the zero-based index of `element` in the list at `key`. Without `RANK`, the first match from the left is returned (rank `1`). `RANK n` selects the nth match counting from the left when `n` is positive, or from the right when `n` is negative. The returned index is always counted from the start of the list. Rank `0` is rejected. A missing key, a missing element, or a rank past the number of matches returns `null`.
+
+| Result | Meaning |
+|--------|---------|
+| *(index)* | Zero-based index of the selected match |
+| `null` | Key is missing, element is not in the list, or the requested rank does not exist |
+| `ERR wrong number of arguments for LPOS command` | Not exactly two arguments, or not exactly `RANK` plus a rank |
+| `ERR syntax error` | Optional form is present but the option is not `RANK` |
+| `ERR value is not an integer or out of range` | Rank is not a non-zero integer |
+| `WRONGTYPE Operation against a key holding the wrong kind of value` | Key exists but is not a list |
+
+**Examples:**
+
+```text
+BMis> RPUSH users Mayur John Rahul
+3
+BMis> LPOS users John
+1
+BMis> LPOS users Akshay
+null
+BMis> LPOS missing John
+null
+BMis> RPUSH letters A B C B D B
+6
+BMis> LPOS letters B RANK 2
+3
+BMis> LPOS letters B RANK -1
+5
+BMis> LPOS letters B RANK 0
+ERR value is not an integer or out of range
+BMis> SET name Mayur
+OK
+BMis> LPOS name Mayur
+WRONGTYPE Operation against a key holding the wrong kind of value
+```
+
 ## Errors
 
 | Message | Cause |
 |---------|--------|
 | `ERR unknown command '<COMMAND>'` | Command name is not recognized |
 | `ERR wrong number of arguments for <COMMAND> command` | Too few or too many arguments for that command |
-| `ERR value is not an integer or out of range` | `EXPIRE`, `INCR`, `DECR`, `LRANGE`, `LINDEX`, `LSET`, or `LTRIM` received a non-integer value |
-| `ERR syntax error` | `SET ... EX` is missing seconds or `EX` is not in the correct position |
+| `ERR value is not an integer or out of range` | `EXPIRE`, `INCR`, `DECR`, `LRANGE`, `LINDEX`, `LSET`, `LTRIM`, or `LPOS RANK` received a non-integer value (`LPOS` also rejects rank `0`) |
+| `ERR syntax error` | `SET ... EX` is missing seconds or `EX` is not in the correct position, or `LPOS` has an option other than `RANK` |
 | `ERR invalid expire time in 'SET' command` | `SET ... EX` seconds argument is not a valid whole number |
 | `ERR no such key` | `LSET` was called on a missing key |
 | `ERR index out of range` | `LSET` index is outside the list bounds |
@@ -697,6 +779,10 @@ BMis> LTRIM queue 1 2
 OK
 BMis> LRANGE queue 0 -1
 b,c
+BMis> RPOPLPUSH queue fruits
+c
+BMis> LPOS fruits c
+0
 BMis> GET name
 Mayur
 BMis> EXISTS name
