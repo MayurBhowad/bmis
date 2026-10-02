@@ -5,7 +5,7 @@ export interface StorageEntry {
     type: string;
 }
 
-export type CommandResult = string | number | null | string[] | undefined;
+export type CommandResult = string | number | string[] | number[] | null | undefined;
 
 export type CommandHandler = (database: Database, args: string[]) => CommandResult;
 

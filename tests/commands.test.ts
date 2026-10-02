@@ -857,3 +857,124 @@ test("LPOS returns null when the requested rank does not exist", () => {
         null
     );
 });
+
+test("LPOS returns multiple indexes with COUNT", () => {
+    const executor = createExecutor();
+
+    executor.execute("RPUSH users A B C B D B");
+
+    const result = executor.execute(
+        "LPOS users B COUNT 2"
+    );
+
+    assert.deepStrictEqual(result, [1, 3]);
+});
+
+test("LPOS COUNT 0 returns all matching indexes", () => {
+    const executor = createExecutor();
+
+    executor.execute("RPUSH users A B C B D B");
+
+    const result = executor.execute(
+        "LPOS users B COUNT 0"
+    );
+
+    assert.deepStrictEqual(result, [1, 3, 5]);
+});
+
+test("LPOS COUNT returns an empty array when the element does not exist", () => {
+    const executor = createExecutor();
+
+    executor.execute("RPUSH users A B C B D B");
+
+    const result = executor.execute(
+        "LPOS users Akshay COUNT 2"
+    );
+
+    assert.deepStrictEqual(result, []);
+});
+
+test("LPOS rejects a negative COUNT", () => {
+    const executor = createExecutor();
+
+    executor.execute("RPUSH users A B C B D B");
+
+    const result = executor.execute(
+        "LPOS users B COUNT -1"
+    );
+
+    assert.strictEqual(
+        result,
+        "ERR count should be > 0"
+    );
+});
+
+test("LPOS supports RANK with COUNT", () => {
+    const executor = createExecutor();
+
+    executor.execute("RPUSH users A B C B D B");
+
+    const result = executor.execute(
+        "LPOS users B RANK 2 COUNT 2"
+    );
+
+    assert.deepStrictEqual(result, [3, 5]);
+});
+
+test("LPOS supports RANK with COUNT", () => {
+    const executor = createExecutor();
+
+    executor.execute("RPUSH users A B C B D B");
+
+    const result = executor.execute(
+        "LPOS users B RANK 2 COUNT 2"
+    );
+
+    assert.deepStrictEqual(result, [3, 5]);
+});
+
+test("LPOS supports negative RANK with COUNT", () => {
+    const executor = createExecutor();
+
+    executor.execute("RPUSH users A B C B D B");
+
+    const result = executor.execute(
+        "LPOS users B RANK -2 COUNT 2"
+    );
+
+    assert.deepStrictEqual(result, [3, 1]);
+});
+
+test("LPOS supports COUNT before RANK", () => {
+    const executor = createExecutor();
+
+    executor.execute("RPUSH users A B C B D B");
+
+    const result = executor.execute(
+        "LPOS users B COUNT 2 RANK 2"
+    );
+
+    assert.deepStrictEqual(result, [3, 5]);
+});
+
+test("LPOS rejects an unknown option", () => {
+    const executor = createExecutor();
+
+    executor.execute("RPUSH users A B C");
+
+    assert.strictEqual(
+        executor.execute("LPOS users B LIMIT 2"),
+        "ERR syntax error"
+    );
+});
+
+test("LPOS rejects an incomplete option", () => {
+    const executor = createExecutor();
+
+    executor.execute("RPUSH users A B C");
+
+    assert.strictEqual(
+        executor.execute("LPOS users B RANK"),
+        "ERR wrong number of arguments for LPOS command"
+    );
+});
