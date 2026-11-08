@@ -1,7 +1,7 @@
 import Database from "../database/database";
 
 function lpos(database: Database, args: string[]): number | number[] | null | string {
-    if (args.length !== 2 && args.length !== 4 && args.length !== 6) {
+    if (![2, 4, 6, 8].includes(args.length)) {
         return 'ERR wrong number of arguments for LPOS command';
     }
 
@@ -10,6 +10,7 @@ function lpos(database: Database, args: string[]): number | number[] | null | st
 
     let rank = 1;
     let count: number | null = null;
+    let maxlen: number | null = null;
 
     if (args.length >= 4) {
         for (let index = 2; index < args.length; index += 2) {
@@ -32,6 +33,12 @@ function lpos(database: Database, args: string[]): number | number[] | null | st
                 if (count < 0) {
                     return 'ERR count should be > 0';
                 }
+            } else if (option  === 'MAXLEN'){
+                maxlen = Number(value);
+
+                if (!Number.isInteger(maxlen) || maxlen < 0) {
+                    return 'ERR value is not an integer or out of range';
+                }
             } else {
                 return 'ERR syntax error';
             }
@@ -48,13 +55,20 @@ function lpos(database: Database, args: string[]): number | number[] | null | st
         return "WRONGTYPE Operation against a key holding the wrong kind of value";
     }
 
+    const searchLength = maxlen === null || maxlen === 0
+        ? list.length
+        : Math.min(maxlen, list.length);
+
+    const startIndex = rank > 0 ? 0 : list.length - 1;
+    const endIndex = rank > 0 ? searchLength : list.length - searchLength;
+
     if (count !== null) {
         const indexes: number[] = [];
     
         if (rank > 0) {
             let occurrence = 0;
     
-            for (let index = 0; index < list.length; index++) {
+            for (let index = startIndex; index < endIndex; index++) {
                 if (list[index] === element) {
                     occurrence++;
     
@@ -72,7 +86,7 @@ function lpos(database: Database, args: string[]): number | number[] | null | st
         } else {
             let occurrence = 0;
     
-            for (let index = list.length - 1; index >= 0; index--) {
+            for (let index = startIndex; index >= endIndex; index--) {
                 if (list[index] === element) {
                     occurrence++;
     
@@ -95,7 +109,7 @@ function lpos(database: Database, args: string[]): number | number[] | null | st
     if (rank > 0) {
         let occurrence = 0;
     
-        for (let index = 0; index < list.length; index++) {
+        for (let index = startIndex; index < endIndex; index++) {
             if (list[index] === element) {
                 occurrence++;
     
@@ -107,7 +121,7 @@ function lpos(database: Database, args: string[]): number | number[] | null | st
     } else {
         let occurrence = 0;
     
-        for (let index = list.length - 1; index >= 0; index--) {
+        for (let index = startIndex; index >= endIndex; index--) {
             if (list[index] === element) {
                 occurrence++;
     

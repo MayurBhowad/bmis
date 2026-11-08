@@ -31,7 +31,7 @@ v0.5.0 — TypeScript interactive CLI plus a TCP server over a shared in-memory 
 | `LSET` | key, index, value | Set a list element at index | `LSET fruits 1 mango` → `OK` |
 | `LTRIM` | key, start, stop | Trim a list to the given inclusive range | `LTRIM fruits 1 2` → `OK` |
 | `RPOPLPUSH` | source, destination | Pop the last element of `source` and prepend it to `destination` | `RPOPLPUSH source dest` → `C` (or `null` if source is missing) |
-| `LPOS` | key, element [`RANK` rank] [`COUNT` count] | Return the index of an element, or a list of indexes when `COUNT` is set | `LPOS users John` → `1` (or `null` if missing) |
+| `LPOS` | key, element [`RANK` rank] [`COUNT` count] [`MAXLEN` len] | Return the index of an element, or a list of indexes when `COUNT` is set; `MAXLEN` limits scanning | `LPOS users John MAXLEN 10` → `1` (or `null` if missing) |
 
 Commands are case-insensitive. For `SET`, everything after the key is the value (spaces allowed), unless `EX seconds` is appended to set expiration in the same command.
 
@@ -41,9 +41,9 @@ Errors:
 - Wrong arity → `ERR wrong number of arguments for <COMMAND> command`
 - Invalid `EXPIRE` seconds (non-integer or out of range) → `ERR value is not an integer or out of range`
 - Invalid `INCR` / `DECR` value (non-integer) → `ERR value is not an integer or out of range`
-- Invalid `SET ... EX` syntax, or an unknown `LPOS` option → `ERR syntax error`
+- Invalid `SET ... EX` syntax, or an unknown `LPOS` option (`RANK`, `COUNT`, or `MAXLEN`) → `ERR syntax error`
 - Invalid `SET ... EX` seconds → `ERR invalid expire time in 'SET' command`
-- Invalid `LPOS` rank (non-integer or `0`) or non-integer `COUNT` → `ERR value is not an integer or out of range`
+- Invalid `LPOS` rank (non-integer or `0`), non-integer `COUNT`, or negative/non-integer `MAXLEN` → `ERR value is not an integer or out of range`
 - Negative `LPOS` `COUNT` → `ERR count should be > 0`
 - Wrong type for list operation → `WRONGTYPE Operation against a key holding the wrong kind of value`
 - Missing list for `LSET` → `ERR no such key`

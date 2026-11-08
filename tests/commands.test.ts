@@ -978,3 +978,68 @@ test("LPOS rejects an incomplete option", () => {
         "ERR wrong number of arguments for LPOS command"
     );
 });
+
+test("LPOS respects MAXLEN when searching from the head", () => {
+    const executor = createExecutor();
+    executor.execute("RPUSH users A B C B D B");
+
+    assert.strictEqual(executor.execute("LPOS users B MAXLEN 2"), 1);
+    assert.strictEqual(executor.execute("LPOS users B MAXLEN 1"), null);
+});
+
+test("LPOS respects MAXLEN when searching from the tail", () => {
+    const executor = createExecutor();
+    executor.execute("RPUSH users A B C B D B");
+    assert.strictEqual(executor.execute("LPOS users B RANK -1 MAXLEN 2"), 5);
+    assert.strictEqual(executor.execute("LPOS users B RANK -2 MAXLEN 2"), null);
+});
+
+test("LPOS supports MAXLEN with COUNT", () => {
+    const executor = createExecutor();
+    executor.execute("RPUSH users A B C B D B");
+    const result = executor.execute("LPOS users B COUNT 0 MAXLEN 4");
+
+    assert.deepStrictEqual(result, [1, 3]);
+});
+
+test("LPOS supports MAXLEN 0 as unlimited", () => {
+    const executor = createExecutor();
+    executor.execute("RPUSH users A B C B D B");
+
+    const result = executor.execute("LPOS users B COUNT 0 MAXLEN 0");
+
+    assert.deepStrictEqual(result, [1, 3, 5]);
+});
+
+test("LPOS rejects invalid MAXLEN values", () => {
+    const executor = createExecutor();
+    executor.execute("RPUSH users A B C");
+
+    assert.strictEqual(executor.execute("LPOS users B MAXLEN -1"), "ERR value is not an integer or out of range");
+    assert.strictEqual(executor.execute("LPOS users B MAXLEN 1.5"), "ERR value is not an integer or out of range");
+});
+
+test("LPOS rejects an incomplete option", () => {
+    const executor = createExecutor();
+    executor.execute("RPUSH users A B C");
+
+    assert.strictEqual(executor.execute("LPOS users B MAXLEN"), "ERR wrong number of arguments for LPOS command");
+});
+
+test("LPOS supports RANK, COUNT, and MAXLEN together", () => {
+    const executor = createExecutor();
+    executor.execute("RPUSH users A B C B D B");
+
+    const result = executor.execute("LPOS users B RANK 2 COUNT 0 MAXLEN 4");
+
+    assert.deepStrictEqual(result, [3]);
+});
+
+test("LPOS supports MAXLEN greater than list length", () => {
+    const executor = createExecutor();
+    executor.execute("RPUSH users A B C B");
+
+    const result = executor.execute("LPOS users B COUNT 0 MAXLEN 100");
+
+    assert.deepStrictEqual(result, [1, 3]);
+});
