@@ -697,20 +697,22 @@ WRONGTYPE Operation against a key holding the wrong kind of value
 
 ### LPOS — find the index of a list element
 
-**Syntax:** `LPOS <key> <element> [RANK <rank>] [COUNT <count>]`
+**Syntax:** `LPOS <key> <element> [RANK <rank>] [COUNT <count>] [MAXLEN <len>]`
 
 Returns the zero-based index of `element` in the list at `key`. Without `RANK`, the first match from the left is returned (rank `1`). `RANK n` selects the nth match counting from the left when `n` is positive, or from the right when `n` is negative. The returned index is always counted from the start of the list. Rank `0` is rejected.
 
 `COUNT` changes the result from one index to a list of indexes. The CLI prints that list as a JavaScript array. `COUNT n` returns up to `n` matches, starting at the selected rank. `COUNT 0` returns every match from that rank. `RANK` and `COUNT` may appear in either order. With a negative rank, matches are collected while scanning from the right, so the indexes come back in right-to-left order. A missing element with `COUNT` returns an empty list. A missing key still returns `null`. A negative `COUNT` is rejected.
+
+`MAXLEN` limits the number of list elements scanned during the search. A positive rank scans from the head (left), while a negative rank scans from the tail (right). `MAXLEN 0` means unlimited scanning. `MAXLEN` can be combined with `RANK` and `COUNT`, and options may appear in any order.
 
 | Result | Meaning |
 |--------|---------|
 | *(index)* | Zero-based index of the selected match (no `COUNT`) |
 | *(list of indexes)* | Matches selected by `COUNT` |
 | `null` | No `COUNT`, and the key is missing, the element is absent, or the rank does not exist |
-| `ERR wrong number of arguments for LPOS command` | Not 2, 4, or 6 arguments (each option needs its value) |
-| `ERR syntax error` | An option is not `RANK` or `COUNT` |
-| `ERR value is not an integer or out of range` | Rank is not a non-zero integer, or `COUNT` is not an integer |
+| `ERR wrong number of arguments for LPOS command` | Not 2, 4, 6, or 8 arguments (each option needs its value) |
+| `ERR syntax error` | An option is not `RANK`, `COUNT`, or `MAXLEN` |
+| `ERR value is not an integer or out of range` | Rank is not a non-zero integer, `COUNT` is not an integer, or `MAXLEN` is not a non-negative integer |
 | `ERR count should be > 0` | `COUNT` is negative |
 | `WRONGTYPE Operation against a key holding the wrong kind of value` | Key exists but is not a list |
 
@@ -749,6 +751,14 @@ BMis> SET name Mayur
 OK
 BMis> LPOS name Mayur
 WRONGTYPE Operation against a key holding the wrong kind of value
+BMis> LPOS letters B MAXLEN 3
+1
+BMis> LPOS letters B COUNT 0 MAXLEN 4
+[ 1, 3 ]
+BMis> LPOS letters B RANK -1 MAXLEN 2
+5
+BMis> LPOS letters B MAXLEN 0
+1
 ```
 
 ## Errors
