@@ -36,6 +36,10 @@ class Storage {
     deleteExpiration(key: string): boolean {
         return this.expire.delete(key);
     }
+
+    *iterateKeys(): IterableIterator<string> {
+        yield* this.data.keys();
+    }
 }
 
 export default Storage;
