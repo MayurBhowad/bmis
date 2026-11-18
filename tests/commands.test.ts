@@ -1043,3 +1043,106 @@ test("LPOS supports MAXLEN greater than list length", () => {
 
     assert.deepStrictEqual(result, [1, 3]);
 });
+
+
+test("SCAN returns keys with cursor-based pagination", () => {
+    const executor = createExecutor();
+
+    executor.execute("SET key1 value1");
+    executor.execute("SET key2 value2");
+    executor.execute("SET key3 value3");
+
+    const firstBatch = executor.execute("SCAN 0 COUNT 2");
+
+    assert.ok(Array.isArray(firstBatch));
+    assert.strictEqual(firstBatch.length, 3);
+
+    const cursor = firstBatch[0] as string;
+    assert.notStrictEqual(cursor, "0");
+
+    const secondBatch = executor.execute(`SCAN ${cursor} COUNT 2`);
+
+    assert.deepStrictEqual(secondBatch, ["0", "key3"]);
+});
+
+test("SCAN accepts COUNT in lowercase", () => {
+    const executor = createExecutor();
+
+    executor.execute("SET key1 value1");
+
+    const result = executor.execute("SCAN 0 count 10");
+
+    assert.ok(Array.isArray(result));
+    assert.ok((result as string[]).includes("key1"));
+});
+
+test("SCAN validates argument count", () => {
+    const executor = createExecutor();
+
+    assert.strictEqual(
+        executor.execute("SCAN"),
+        "ERR wrong number of arguments for SCAN command"
+    );
+
+    assert.strictEqual(
+        executor.execute("SCAN 0"),
+        "ERR wrong number of arguments for SCAN command"
+    );
+
+    assert.strictEqual(
+        executor.execute("SCAN 0 COUNT 10 EXTRA"),
+        "ERR wrong number of arguments for SCAN command"
+    );
+});
+
+test("SCAN rejects unsupported options", () => {
+    const executor = createExecutor();
+
+    assert.strictEqual(executor.execute("SCAN 0 LIMIT 10"), "ERR syntax error");
+});
+
+test("SCAN rejects invalid cursor values", () => {
+    const executor = createExecutor();
+
+    assert.strictEqual(executor.execute("SCAN abc COUNT 10"), "ERR invalid cursor");
+    assert.strictEqual(executor.execute("SCAN -1 COUNT 10"), "ERR invalid cursor");
+});
+
+test("SCAN validates COUNT values", () => {
+    const executor = createExecutor();
+
+    assert.strictEqual(
+        executor.execute("SCAN 0 COUNT abc"),
+        "ERR value is not an integer or out of range"
+    );
+
+    assert.strictEqual(
+        executor.execute("SCAN 0 COUNT 1.5"),
+        "ERR value is not an integer or out of range"
+    );
+
+    assert.strictEqual(
+        executor.execute("SCAN 0 COUNT 0"),
+        "ERR count should be > 0"
+    );
+
+    assert.strictEqual(
+        executor.execute("SCAN 0 COUNT -1"),
+        "ERR value is not an integer or out of range"
+    );
+
+    assert.strictEqual(
+        executor.execute("SCAN 0 COUNT 101"),
+        "ERR COUNT exceeds maximum allowed value of 100"
+    );
+});
+
+test("SCAN accepts maximum COUNT of 100", () => {
+    const executor = createExecutor();
+
+    executor.execute("SET key1 value1");
+
+    const result = executor.execute("SCAN 0 COUNT 100");
+
+    assert.deepStrictEqual(result, ["0", "key1"]);
+});
