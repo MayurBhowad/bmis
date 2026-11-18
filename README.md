@@ -8,7 +8,7 @@ BMis starts as a minimal key-value engine and is evolving toward a networked dat
 
 ## Current status
 
-v0.5.0 — TypeScript interactive CLI plus a TCP server over a shared in-memory key-value store, with unit tests for the database, parser, command executer, RESP encoder, and TCP server. On start, BMis listens on **`127.0.0.1:6379`**. Clients send one plain-text command per line; replies are RESP. The local CLI remains available. The database layer uses an injectable `Storage` backend (defaults to in-memory). Values are stored with type metadata — **strings** and **lists** are supported and can be inspected with `TYPE`. Integer strings can be incremented or decremented with `INCR` and `DECR`. Lists support `LPUSH`, `RPUSH`, `LPOP`, `RPOP`, `LRANGE`, `LLEN`, `LINDEX`, `LSET`, `LTRIM`, `RPOPLPUSH`, and `LPOS`. Keys can expire via `EXPIRE`, `SET ... EX`, or remaining TTL can be queried with `TTL`; expired keys are removed lazily on `GET`, `TTL`, and `TYPE`, and `SET` clears expiration when overwriting a key.
+v0.5.0 — TypeScript interactive CLI plus a TCP server over a shared in-memory key-value store, with unit tests for the database, parser, command executer, RESP encoder, and TCP server. On start, BMis listens on **`127.0.0.1:6379`**. Clients send one plain-text command per line; replies are RESP. The local CLI remains available. The database layer uses an injectable `Storage` backend (defaults to in-memory). Values are stored with type metadata — **strings** and **lists** are supported and can be inspected with `TYPE`. Integer strings can be incremented or decremented with `INCR` and `DECR`. Lists support `LPUSH`, `RPUSH`, `LPOP`, `RPOP`, `LRANGE`, `LLEN`, `LINDEX`, `LSET`, `LTRIM`, `RPOPLPUSH`, and `LPOS`. `SCAN` provides bounded cursor-based key listing for string and list keys. Keys can expire via `EXPIRE` or `SET ... EX`, and remaining TTL can be queried with `TTL`; expired keys are removed lazily on `GET`, `TTL`, `TYPE`, and `SCAN`, and `SET` clears expiration when overwriting a key.
 
 | Command | Args | Description | Example |
 |---------|------|-------------|---------|
@@ -18,6 +18,7 @@ v0.5.0 — TypeScript interactive CLI plus a TCP server over a shared in-memory 
 | `EXISTS` | key [key ...] | Count how many keys exist | `EXISTS name missing` → `1` |
 | `EXPIRE` | key, seconds | Set a key's time-to-live in seconds (`0` expires immediately) | `EXPIRE session 60` → `1` (or `0` if key missing) |
 | `TTL` | key | Get remaining TTL in seconds | `TTL session` → `60` (or `-1` / `-2`; see below) |
+| `SCAN` | cursor, `COUNT` limit | List keys in bounded cursor-based batches | `SCAN 0 COUNT 10` → `[next-cursor, key, ...]` |
 | `TYPE` | key | Get the type of a key | `TYPE name` → `string` (or `list` / `none`) |
 | `INCR` | key | Increment an integer string value by 1 | `INCR counter` → `11` (creates key as `1` if missing) |
 | `DECR` | key | Decrement an integer string value by 1 | `DECR counter` → `9` (creates key as `-1` if missing) |
@@ -41,6 +42,9 @@ Errors:
 - Wrong arity → `ERR wrong number of arguments for <COMMAND> command`
 - Invalid `EXPIRE` seconds (non-integer or out of range) → `ERR value is not an integer or out of range`
 - Invalid `INCR` / `DECR` value (non-integer) → `ERR value is not an integer or out of range`
+- Invalid `SCAN` count (non-integer) → `ERR value is not an integer or out of range`
+- `SCAN` count of `0` → `ERR count should be > 0`; count above `100` → `ERR COUNT exceeds maximum allowed value of 100`
+- Invalid or expired `SCAN` cursor → `ERR invalid cursor`; unsupported `SCAN` option → `ERR syntax error`
 - Invalid `SET ... EX` syntax, or an unknown `LPOS` option (`RANK`, `COUNT`, or `MAXLEN`) → `ERR syntax error`
 - Invalid `SET ... EX` seconds → `ERR invalid expire time in 'SET' command`
 - Invalid `LPOS` rank (non-integer or `0`), non-integer `COUNT`, or negative/non-integer `MAXLEN` → `ERR value is not an integer or out of range`
@@ -71,6 +75,7 @@ src/
     ├── exists.ts                 # EXISTS command
     ├── expire.ts                 # EXPIRE command
     ├── ttl.ts                    # TTL command
+    ├── scan.ts                   # SCAN command
     ├── type.ts                   # TYPE command
     ├── incr.ts                   # INCR command
     ├── decr.ts                   # DECR command

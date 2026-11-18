@@ -13,7 +13,7 @@ let tcpServer: TcpServer;
 
 function parseResponse(
     buffer: string
-): { response: string; remaining: string } | undefined {
+): { response: string | string[]; remaining: string } | undefined {
 
     const lineEnd = buffer.indexOf("\r\n");
 
@@ -22,6 +22,47 @@ function parseResponse(
     }
 
     const header = buffer.slice(0, lineEnd);
+
+    if (header.startsWith("*")) {
+        const count = Number(header.slice(1));
+        let position = lineEnd + 2;
+        const elements: string[] = [];
+
+        for (let index = 0; index < count; index++) {
+            const bulkLineEnd = buffer.indexOf("\r\n", position);
+
+            if (bulkLineEnd === -1) {
+                return undefined;
+            }
+
+            const bulkHeader = buffer.slice(position, bulkLineEnd);
+
+            if (!bulkHeader.startsWith("$")) {
+                return undefined;
+            }
+
+            const length = Number(bulkHeader.slice(1));
+
+            if (!Number.isInteger(length) || length < 0) {
+                return undefined;
+            }
+
+            const valueStart = bulkLineEnd + 2;
+            const valueEnd = valueStart + length;
+
+            if (buffer.length < valueEnd + 2) {
+                return undefined;
+            }
+
+            elements.push(buffer.slice(valueStart, valueEnd));
+            position = valueEnd + 2;
+        }
+
+        return {
+            response: elements,
+            remaining: buffer.slice(position),
+        };
+    }
 
     if (header === "+OK") {
         return {
@@ -77,10 +118,10 @@ class TestClient {
 
     private buffer = "";
 
-    private responses: string[] = [];
+    private responses: Array<string | string[]> = [];
 
     private waiters: Array<{
-        resolve: (value: string) => void;
+        resolve: (value: string | string[]) => void;
         reject: (error: Error) => void;
     }> = [];
 
@@ -139,7 +180,7 @@ class TestClient {
         this.socket.write(data);
     }
 
-    send(command: string): Promise<string> {
+    send(command: string): Promise<string | string[]> {
 
         this.socket.write(`${command}\n`);
 
@@ -293,7 +334,7 @@ test("TCP server handles multiple commands received in one packet", async () => 
 
     const client = await TestClient.connect();
 
-    const responses: Promise<string>[] = [];
+    const responses: Promise<string | string[]>[] = [];
 
     responses.push(client.send("SET packet one"));
     responses.push(client.send("GET packet"));
@@ -347,4 +388,45 @@ test("TCP server ignores empty commands", async () => {
     );
 
     await client.close();
+});
+
+test("TCP server executes SCAN and returns cursor with keys", async () => {
+    const client = await TestClient.connect();
+
+    try {
+        await client.send("SET scan-key1 value1");
+        await client.send("SET scan-key2 value2");
+        await client.send("SET scan-key3 value3");
+
+        let cursor = "0";
+        const scannedKeys: string[] = [];
+        let completed = false;
+        let pages = 0;
+
+        while (!completed && pages < 100) {
+            const response = await client.send(
+                `SCAN ${cursor} COUNT 2`
+            );
+
+            assert.ok(Array.isArray(response));
+
+            const nextCursor = response[0];
+
+            assert.equal(typeof nextCursor, "string");
+
+            scannedKeys.push(...response.slice(1) as string[]);
+
+            cursor = nextCursor as string;
+            completed = cursor === "0";
+            pages++;
+        }
+
+        assert.ok(completed, "SCAN should finish within 100 pages");
+
+        assert.ok(scannedKeys.includes("scan-key1"));
+        assert.ok(scannedKeys.includes("scan-key2"));
+        assert.ok(scannedKeys.includes("scan-key3"));
+    } finally {
+        await client.close();
+    }
 });

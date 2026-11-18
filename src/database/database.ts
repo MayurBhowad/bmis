@@ -1,7 +1,18 @@
 import Storage from './storage';
 
+interface ScanCursor {
+    iterator: IterableIterator<string>;
+    lastAccessedAt: number;
+}
+
 class Database {
     storage: Storage;
+    private scanCursors = new Map<string, ScanCursor>();
+    private nextScanCursor = 1;
+
+    private readonly SCAN_CURSOR_TTL_MS = 60_000;
+    private readonly MAX_ACTIVE_SCAN_CURSORS = 1000;
+    private readonly MAX_SCAN_COUNT = 100;
 
     constructor(storage: Storage = new Storage()) {
         this.storage = storage;
@@ -85,6 +96,118 @@ class Database {
         }
         return this.storage.get(key)!.type;
     }
+
+    private cleanupExpiredScanCursors(now: number): void {
+        for (const [cursor, session] of this.scanCursors) {
+            if (now - session.lastAccessedAt >= this.SCAN_CURSOR_TTL_MS) {
+                this.scanCursors.delete(cursor);
+            }
+        }
+    }
+
+    private createScanCursor(
+        iterator: IterableIterator<string>,
+        now: number
+    ): string | null {
+        if (this.scanCursors.size >= this.MAX_ACTIVE_SCAN_CURSORS) {
+            return null;
+        }
+
+        let cursor = String(this.nextScanCursor);
+
+        while (this.scanCursors.has(cursor)) {
+            this.nextScanCursor =
+                this.nextScanCursor >= Number.MAX_SAFE_INTEGER
+                    ? 1
+                    : this.nextScanCursor + 1;
+
+            cursor = String(this.nextScanCursor);
+        }
+
+        this.nextScanCursor =
+            this.nextScanCursor >= Number.MAX_SAFE_INTEGER
+                ? 1
+                : this.nextScanCursor + 1;
+
+        this.scanCursors.set(cursor, {
+            iterator,
+            lastAccessedAt: now
+        });
+
+        return cursor;
+    }
+
+    scan(cursor: string, count: number): string[] | string {
+        if (
+            !Number.isInteger(count) ||
+            count < 1 ||
+            count > this.MAX_SCAN_COUNT
+        ) {
+            return 'ERR invalid scan count';
+        }
+
+        const now = Date.now();
+        this.cleanupExpiredScanCursors(now);
+
+        let activeCursor: string;
+        let session: ScanCursor | undefined;
+
+        if (cursor === '0') {
+            const iterator = this.storage.iterateKeys();
+
+            const newCursor = this.createScanCursor(iterator, now);
+
+            if (newCursor === null) {
+                return 'ERR too many active scan cursors';
+            }
+
+            activeCursor = newCursor;
+            session = this.scanCursors.get(activeCursor);
+        } else {
+            session = this.scanCursors.get(cursor);
+
+            if (!session) {
+                return 'ERR invalid cursor';
+            }
+
+            activeCursor = cursor;
+            session.lastAccessedAt = now;
+        }
+
+        if (!session) {
+            return 'ERR invalid cursor';
+        }
+
+        const keys: string[] = [];
+        let examined = 0;
+
+        while (examined < count) {
+            const result = session.iterator.next();
+
+            if (result.done) {
+                this.scanCursors.delete(activeCursor);
+                return ['0', ...keys];
+            }
+
+            examined++;
+
+            const key = result.value;
+
+            if (!this.storage.has(key)) {
+                continue;
+            }
+
+            if (this.isExpired(key)) {
+                this.deleteKey(key);
+                continue;
+            }
+
+            keys.push(key);
+        }
+
+        return [activeCursor, ...keys];
+    }
+
 }
 
 export default Database;

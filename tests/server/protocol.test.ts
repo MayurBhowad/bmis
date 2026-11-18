@@ -134,3 +134,23 @@ test('protocol encodes Japanese string using UTF-8 byte length', () => {
         `$${expectedLength}\r\n${value}\r\n`
     );
 });
+
+
+test('protocol encodes SCAN cursor and keys response', () => {
+    assert.equal(
+        protocol.encode(['2', 'key1', 'key2']),
+        '*3\r\n' +
+        '$1\r\n2\r\n' +
+        '$4\r\nkey1\r\n' +
+        '$4\r\nkey2\r\n'
+    );
+});
+
+test('protocol encodes completed SCAN response', () => {
+    assert.equal(
+        protocol.encode(['0', 'key3']),
+        '*2\r\n' +
+        '$1\r\n0\r\n' +
+        '$4\r\nkey3\r\n'
+    );
+});

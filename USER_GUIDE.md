@@ -44,7 +44,7 @@ On start, BMis listens on **`127.0.0.1:6379`** (host and port are the current de
   - integers (`INCR`, `LLEN`, `LPOS` without `COUNT`, and similar) → `:<n>`
   - other strings (`GET`, popped elements, errors' text values) → `$<byte-length>` followed by the value. The length is the UTF-8 byte length.
   - `null` → `$-1` (the CLI prints `null`)
-  - arrays (`LRANGE`, `LPOS ... COUNT`) → `*<count>` followed by one bulk string per element. Numeric indexes are sent as bulk strings, not integer replies.
+  - arrays (`LRANGE`, `LPOS ... COUNT`, and `SCAN`) → `*<count>` followed by one bulk string per element. Numeric indexes and SCAN cursors are sent as bulk strings, not integer replies.
   - errors (`ERR ...` and `WRONGTYPE ...`) → `-<message>`
   - a blank command produces no reply
 - The TCP server and CLI share the same in-memory database in that process.
@@ -83,6 +83,7 @@ banana
 - `DEL` and `EXISTS` accept **one or more** keys and return a count.
 - `EXPIRE` takes **exactly two** arguments: a key and a TTL in seconds.
 - `TTL` takes **exactly one** argument (the key). Returns `-2` if the key is missing or expired, `-1` if the key has no expiration, or the remaining seconds otherwise.
+- `SCAN` takes a cursor, the required `COUNT` option, and a limit from `1` to `100`. Start with cursor `0`, then pass each returned cursor to the next call until the cursor is `0` again.
 - `TYPE` takes **exactly one** argument (the key). Returns `string` or `list` for stored values, or `none` if the key is missing or expired.
 - `INCR` and `DECR` each take **exactly one** argument (the key). They operate on integer string values and return the new value as a number.
 - `LPUSH` and `RPUSH` take a key followed by **one or more** values and return the new list length.
@@ -289,6 +290,46 @@ ERR wrong number of arguments for TTL command
 BMis> TTL session extra
 ERR wrong number of arguments for TTL command
 ```
+
+### SCAN — list keys in bounded batches
+
+**Syntax:** `SCAN <cursor> COUNT <limit>`
+
+Lists key names using cursor-based pagination. It returns keys only, never their stored values, and includes both string and list keys. Expired keys encountered during the scan are removed and are not returned.
+
+Start a new scan with cursor `0`. The response is an array whose first element is the next cursor and whose remaining elements are the key names found in that batch. Pass the returned cursor unchanged to the next `SCAN` call. A returned cursor of `0` means the scan is complete.
+
+`COUNT` is required and must be between `1` and `100`. It limits the number of storage entries examined in one call; it does **not** guarantee that many keys will be returned. For example, expired or concurrently deleted entries still consume the examination limit. A batch may therefore contain fewer keys than the requested count, or no keys while the cursor is still nonzero. The implementation does not look ahead beyond the requested examination limit, so a final call may return `["0"]` with no keys if the previous call ended exactly at the limit.
+
+A scan is weakly consistent, not a snapshot. Keys inserted or deleted while a scan is in progress may affect which keys are seen. Cursors expire after 60 seconds of inactivity, and at most 1,000 scan cursors can be active at once.
+
+| Result | Meaning |
+|--------|---------|
+| `[<next-cursor>, <key> ...]` | Next cursor followed by the key names found in this batch |
+| `["0"]` | Scan is complete; no keys were returned in this final batch |
+| `ERR wrong number of arguments for SCAN command` | Missing or extra arguments |
+| `ERR syntax error` | The option is not `COUNT` |
+| `ERR invalid cursor` | Cursor is invalid or has expired |
+| `ERR value is not an integer or out of range` | `COUNT` is not a whole-number value, or is outside the supported integer range |
+| `ERR count should be > 0` | `COUNT` is `0` |
+| `ERR COUNT exceeds maximum allowed value of 100` | `COUNT` is greater than `100` |
+
+**Example:**
+
+```text
+BMis> SET user:1 Mayur
+OK
+BMis> SET user:2 Amit
+OK
+BMis> RPUSH queue task-a task-b
+2
+BMis> SCAN 0 COUNT 2
+[ '1', 'user:1', 'user:2' ]
+BMis> SCAN 1 COUNT 2
+[ '0', 'queue' ]
+```
+
+The cursor values above are illustrative; treat returned cursors as opaque tokens and do not rely on a particular sequence.
 
 ### TYPE — get the type of a key
 
@@ -767,12 +808,14 @@ BMis> LPOS letters B MAXLEN 0
 |---------|--------|
 | `ERR unknown command '<COMMAND>'` | Command name is not recognized |
 | `ERR wrong number of arguments for <COMMAND> command` | Too few or too many arguments for that command |
-| `ERR value is not an integer or out of range` | `EXPIRE`, `INCR`, `DECR`, `LRANGE`, `LINDEX`, `LSET`, `LTRIM`, or `LPOS` received a non-integer value (`LPOS` rank `0` is rejected the same way) |
-| `ERR count should be > 0` | `LPOS` `COUNT` is negative (`COUNT 0` is allowed and means every match) |
-| `ERR syntax error` | `SET ... EX` is missing seconds or `EX` is not in the correct position, or `LPOS` has an option other than `RANK` or `COUNT` |
+| `ERR value is not an integer or out of range` | `EXPIRE`, `INCR`, `DECR`, `LRANGE`, `LINDEX`, `LSET`, `LTRIM`, `LPOS`, or `SCAN` received an invalid integer argument (`LPOS` rank `0` is rejected the same way) |
+| `ERR count should be > 0` | `LPOS` `COUNT` is negative (`COUNT 0` is allowed and means every match), or `SCAN` `COUNT` is zero |
+| `ERR syntax error` | `SET ... EX` is missing seconds or `EX` is not in the correct position, `LPOS` has an unsupported option, or `SCAN` uses an option other than `COUNT` |
 | `ERR invalid expire time in 'SET' command` | `SET ... EX` seconds argument is not a valid whole number |
 | `ERR no such key` | `LSET` was called on a missing key |
 | `ERR index out of range` | `LSET` index is outside the list bounds |
+| `ERR invalid cursor` | `SCAN` received an invalid or expired cursor |
+| `ERR COUNT exceeds maximum allowed value of 100` | `SCAN` `COUNT` is greater than `100` |
 | `WRONGTYPE Operation against a key holding the wrong kind of value` | A list command was used on a non-list key |
 
 **Examples:**
